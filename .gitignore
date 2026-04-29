@@ -1,0 +1,29 @@
+# env
+.env
+.env.local
+*.env
+
+# python
+**/__pycache__/
+**/*.pyc
+**/.venv/
+**/venv/
+**/db.sqlite3
+
+# java / spring
+**/target/
+**/.gradle/
+**/build/
+**/.idea/
+**/*.iml
+**/.mvn/wrapper/maven-wrapper.jar
+
+# node
+**/node_modules/
+**/dist/
+**/.next/
+
+# os / editor
+.DS_Store
+.vscode/
+*.swp
