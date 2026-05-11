@@ -6,12 +6,18 @@ import java.util.List;
 import java.util.UUID;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * 처방. 매일 복약 토글이 이 목록을 순회.
  * schedule는 "morning,noon,evening" 부분집합을 쉼표 구분 문자열로 저장.
  * (TEXT[]는 H2/Postgres 호환이 까다로워 String + 헬퍼로 단순화)
  */
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "prescriptions")
 public class Prescription {
@@ -54,25 +60,6 @@ public class Prescription {
     public void setScheduleSlots(List<String> slots) {
         this.schedule = slots == null ? "" : String.join(",", slots);
     }
-
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-    public User getPatient() { return patient; }
-    public void setPatient(User patient) { this.patient = patient; }
-    public String getMedicationName() { return medicationName; }
-    public void setMedicationName(String medicationName) { this.medicationName = medicationName; }
-    public String getSchedule() { return schedule; }
-    public void setSchedule(String schedule) { this.schedule = schedule; }
-    public boolean isActive() { return active; }
-    public void setActive(boolean active) { this.active = active; }
-    public int getDaysSupply() { return daysSupply; }
-    public void setDaysSupply(int daysSupply) { this.daysSupply = daysSupply; }
-    public String getStorageLocation() { return storageLocation; }
-    public void setStorageLocation(String storageLocation) { this.storageLocation = storageLocation; }
-    public String getStoragePhotoUrl() { return storagePhotoUrl; }
-    public void setStoragePhotoUrl(String storagePhotoUrl) { this.storagePhotoUrl = storagePhotoUrl; }
-    public OffsetDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
 
     /** 처방 종료일 (createdAt + daysSupply). */
     public java.time.LocalDate endDate() {

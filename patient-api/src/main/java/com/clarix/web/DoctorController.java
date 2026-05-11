@@ -1,24 +1,23 @@
 package com.clarix.web;
 
-import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.clarix.dto.PrescriptionForm;
 import com.clarix.domain.Role;
 import com.clarix.domain.User;
 import com.clarix.repo.UserRepository;
 import com.clarix.service.CurrentUser;
 import com.clarix.service.DoctorService;
 import com.clarix.service.DrugInteractionService;
-import com.clarix.service.GeminiSoapService;
 import com.clarix.service.NoteService;
 import com.clarix.service.PatientService;
 
@@ -33,19 +32,18 @@ public class DoctorController {
     private final NoteService noteSvc;
     private final DrugInteractionService drugSvc;
     private final PatientService patientSvc;
-    private final GeminiSoapService geminiSvc;
     private final UserRepository users;
 
     public DoctorController(CurrentUser current, DoctorService doctorSvc,
-                            NoteService noteSvc, DrugInteractionService drugSvc,
-                            PatientService patientSvc, GeminiSoapService geminiSvc,
+                            NoteService noteSvc,
+                            DrugInteractionService drugSvc,
+                            PatientService patientSvc,
                             UserRepository users) {
         this.current = current;
         this.doctorSvc = doctorSvc;
         this.noteSvc = noteSvc;
         this.drugSvc = drugSvc;
         this.patientSvc = patientSvc;
-        this.geminiSvc = geminiSvc;
         this.users = users;
     }
 
@@ -131,37 +129,6 @@ public class DoctorController {
         return "doctor/patient";
     }
 
-    /** 차트용 JSON — 작은 fetch로 호출 (HTML 안 만큼 사용). */
-    @GetMapping("/patient/{id}/timeline")
-    @ResponseBody
-    public Map<String, Object> timeline(@PathVariable UUID id,
-                                        @RequestParam(defaultValue = "7") int days,
-                                        HttpSession session) {
-        User me = current.requireRole(session, Role.DOCTOR);
-        return doctorSvc.timeline(me.getId(), id, days);
-    }
-
-    /** 약물 상호작용 사전 체크 — 처방 추가 직전 폼이 호출. */
-    @PostMapping("/drug-check")
-    @ResponseBody
-    public java.util.List<DrugInteractionService.Risk> drugCheck(
-            @RequestParam(name = "med", required = false) java.util.List<String> meds,
-            HttpSession session) {
-        current.requireRole(session, Role.DOCTOR);
-        if (meds == null) return java.util.List.of();
-        return drugSvc.check(meds);
-    }
-
-    /** LLM SOAP autofill — 자유 텍스트 + 환자 컨텍스트 → JSON {S, O, A, P} */
-    @PostMapping("/patient/{id}/llm-soap")
-    @ResponseBody
-    public GeminiSoapService.Soap llmSoap(@PathVariable UUID id,
-                                          @RequestParam(name = "freeText", required = false) String freeText,
-                                          HttpSession session) {
-        current.requireRole(session, Role.DOCTOR);
-        return geminiSvc.autofill(id, freeText);
-    }
-
     @PostMapping("/patient/{id}/soap")
     public String addSoap(@PathVariable UUID id,
                           @RequestParam(required = false) String subjective,
@@ -176,16 +143,15 @@ public class DoctorController {
 
     @PostMapping("/patient/{id}/prescription")
     public String addPrescription(@PathVariable UUID id,
-                                  @RequestParam String medicationName,
-                                  @RequestParam(name = "slots", required = false) java.util.List<String> slots,
-                                  @RequestParam(defaultValue = "30") int daysSupply,
+                                  @ModelAttribute PrescriptionForm form,
                                   HttpSession session) {
         User me = current.requireRole(session, Role.DOCTOR);
-        if (medicationName == null || medicationName.isBlank() || slots == null || slots.isEmpty()) {
+        if (form.getMedicationName() == null || form.getMedicationName().isBlank()
+                || form.getSlots() == null || form.getSlots().isEmpty()) {
             return "redirect:/doctor/patient/" + id;
         }
-        doctorSvc.addPrescriptionFor(me, id, medicationName.trim(), slots,
-            Math.max(1, daysSupply));
+        doctorSvc.addPrescriptionFor(me, id, form.getMedicationName().trim(), form.getSlots(),
+            Math.max(1, form.getDaysSupply()));
         return "redirect:/doctor/patient/" + id;
     }
 

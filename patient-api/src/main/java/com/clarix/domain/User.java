@@ -4,7 +4,13 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "users")
 public class User {
@@ -45,25 +51,4 @@ public class User {
 
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt = OffsetDateTime.now();
-
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-    public Role getRole() { return role; }
-    public void setRole(Role role) { this.role = role; }
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
-    public String getPasswordHash() { return passwordHash; }
-    public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
-    public Hospital getHospital() { return hospital; }
-    public void setHospital(Hospital hospital) { this.hospital = hospital; }
-    public String getReceptionMemo() { return receptionMemo; }
-    public void setReceptionMemo(String receptionMemo) { this.receptionMemo = receptionMemo; }
-    public String getDoctorMemo() { return doctorMemo; }
-    public void setDoctorMemo(String doctorMemo) { this.doctorMemo = doctorMemo; }
-    public OffsetDateTime getBookedAt() { return bookedAt; }
-    public void setBookedAt(OffsetDateTime bookedAt) { this.bookedAt = bookedAt; }
-    public OffsetDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
 }

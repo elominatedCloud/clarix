@@ -4,7 +4,13 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "assessments")
 public class Assessment {
@@ -37,21 +43,4 @@ public class Assessment {
 
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt = OffsetDateTime.now();
-
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-    public User getPatient() { return patient; }
-    public void setPatient(User patient) { this.patient = patient; }
-    public Hospital getHospital() { return hospital; }
-    public void setHospital(Hospital hospital) { this.hospital = hospital; }
-    public String getKind() { return kind; }
-    public void setKind(String kind) { this.kind = kind; }
-    public int getTotalScore() { return totalScore; }
-    public void setTotalScore(int totalScore) { this.totalScore = totalScore; }
-    public Severity getSeverity() { return severity; }
-    public void setSeverity(Severity severity) { this.severity = severity; }
-    public String getAnswers() { return answers; }
-    public void setAnswers(String answers) { this.answers = answers; }
-    public OffsetDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
 }

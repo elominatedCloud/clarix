@@ -4,7 +4,13 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "meal_logs")
 public class MealLog {
@@ -26,15 +32,4 @@ public class MealLog {
 
     @Column(name = "logged_at", nullable = false)
     private OffsetDateTime loggedAt = OffsetDateTime.now();
-
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-    public User getPatient() { return patient; }
-    public void setPatient(User patient) { this.patient = patient; }
-    public MealKind getKind() { return kind; }
-    public void setKind(MealKind kind) { this.kind = kind; }
-    public String getNote() { return note; }
-    public void setNote(String note) { this.note = note; }
-    public OffsetDateTime getLoggedAt() { return loggedAt; }
-    public void setLoggedAt(OffsetDateTime loggedAt) { this.loggedAt = loggedAt; }
 }

@@ -10,7 +10,7 @@
 | 영역 | 기술 |
 |---|---|
 | 빌드 | **Gradle** (`build.gradle`) |
-| 백엔드 | Spring Boot 3.5 · Java 21 · **Spring MVC + Thymeleaf** |
+| 백엔드 | Spring Boot 3.5 · Java 21 · **Spring MVC + Thymeleaf** · Lombok |
 | 데이터 | **JPA + Spring Data JPA**, H2 in-memory (default) / PostgreSQL via Supabase |
 | 인증 | **Spring Security** + BCrypt (폼 로그인 + 세션) |
 | 프론트 | HTML5 + CSS3 (정적 자원), 차트만 Chart.js |
@@ -19,6 +19,7 @@
 수업 진도 매핑:
 - 3주 HTML/CSS3 → `static/css/{tokens,patient,doctor}.css`
 - 5주 Gradle 의존성 → `build.gradle`
+- 4주 Spring Boot + Lombok → `build.gradle`, `dto/PrescriptionForm.java`, `domain/`
 - 6-7주 Controller + RESTful + Repository · Service 티어 → `web/`, `repo/`, `service/`
 - 9주 JPA + ORM → `domain/` (9 엔티티)
 - 11주 Thymeleaf + 정적 리소스 → `templates/`

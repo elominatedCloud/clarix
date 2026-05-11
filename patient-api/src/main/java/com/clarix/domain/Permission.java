@@ -4,7 +4,13 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "permissions",
        uniqueConstraints = @UniqueConstraint(columnNames = {"patient_id", "doctor_id"}))
@@ -31,17 +37,4 @@ public class Permission {
     /** 의사가 마지막으로 환자 상세를 연 시각. 환자가 권한을 부여한 의사가 실제로 보고 있는지 확인용. */
     @Column(name = "last_viewed_at")
     private OffsetDateTime lastViewedAt;
-
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-    public User getPatient() { return patient; }
-    public void setPatient(User patient) { this.patient = patient; }
-    public User getDoctor() { return doctor; }
-    public void setDoctor(User doctor) { this.doctor = doctor; }
-    public boolean isActive() { return active; }
-    public void setActive(boolean active) { this.active = active; }
-    public OffsetDateTime getGrantedAt() { return grantedAt; }
-    public void setGrantedAt(OffsetDateTime grantedAt) { this.grantedAt = grantedAt; }
-    public OffsetDateTime getLastViewedAt() { return lastViewedAt; }
-    public void setLastViewedAt(OffsetDateTime lastViewedAt) { this.lastViewedAt = lastViewedAt; }
 }

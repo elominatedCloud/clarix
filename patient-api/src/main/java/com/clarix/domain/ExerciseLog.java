@@ -4,7 +4,13 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "exercise_logs")
 public class ExerciseLog {
@@ -30,17 +36,4 @@ public class ExerciseLog {
 
     @Column(name = "logged_at", nullable = false)
     private OffsetDateTime loggedAt = OffsetDateTime.now();
-
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-    public User getPatient() { return patient; }
-    public void setPatient(User patient) { this.patient = patient; }
-    public String getKind() { return kind; }
-    public void setKind(String kind) { this.kind = kind; }
-    public int getDurationMin() { return durationMin; }
-    public void setDurationMin(int durationMin) { this.durationMin = durationMin; }
-    public String getNote() { return note; }
-    public void setNote(String note) { this.note = note; }
-    public OffsetDateTime getLoggedAt() { return loggedAt; }
-    public void setLoggedAt(OffsetDateTime loggedAt) { this.loggedAt = loggedAt; }
 }

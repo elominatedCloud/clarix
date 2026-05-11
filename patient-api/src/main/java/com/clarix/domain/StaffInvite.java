@@ -4,6 +4,9 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * 의사가 같은 병원 내 staff(간호사/데스크)에게 발급하는 초대.
@@ -12,6 +15,9 @@ import jakarta.persistence.*;
  *   - active=false면 가입 시 매칭되지 않음 (즉 신규 가입 차단)
  *   - 이미 가입된 staff의 활성/비활성은 User.active 등 다른 메커니즘 (단계 1에선 invite.active로 신규 차단만)
  */
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "staff_invites",
        uniqueConstraints = @UniqueConstraint(columnNames = {"email", "doctor_id"}))
@@ -44,21 +50,4 @@ public class StaffInvite {
 
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt = OffsetDateTime.now();
-
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
-    public Role getRole() { return role; }
-    public void setRole(Role role) { this.role = role; }
-    public Hospital getHospital() { return hospital; }
-    public void setHospital(Hospital hospital) { this.hospital = hospital; }
-    public User getDoctor() { return doctor; }
-    public void setDoctor(User doctor) { this.doctor = doctor; }
-    public boolean isActive() { return active; }
-    public void setActive(boolean active) { this.active = active; }
-    public OffsetDateTime getConsumedAt() { return consumedAt; }
-    public void setConsumedAt(OffsetDateTime consumedAt) { this.consumedAt = consumedAt; }
-    public OffsetDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
 }
