@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Clarix · 약 등록</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <link rel="stylesheet" th:href="@{/css/tokens.css}" />
+  <link rel="stylesheet" th:href="@{/css/patient.css}" />
+  <style>
+    .step-pills { display:flex; gap:6px; margin-bottom: 16px; }
+    .step-pill { flex:1; height:4px; background: rgba(4,19,48,0.12); border-radius:2px; }
+    .step-pill[data-active="true"] { background: var(--clarix-coral); }
+
+    .med-row {
+      background: #fff;
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 8px rgba(4,19,48,0.05);
+    }
+    .med-row input[type="text"] {
+      width: 100%; height: 42px; padding: 0 14px;
+      border: 1px solid var(--clarix-line);
+      border-radius: 10px; font-size: 15px;
+      margin-bottom: 12px;
+      background: #fff; color: var(--clarix-navy);
+      transition: border-color 120ms;
+    }
+    .med-row input[type="text"]:focus {
+      outline: none; border-color: var(--clarix-coral);
+      box-shadow: 0 0 0 3px rgba(233,127,102,0.18);
+    }
+
+    .slot-toggles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .slot-toggles label {
+      height: 38px; line-height: 38px; text-align: center;
+      border: 1px solid var(--clarix-line);
+      border-radius: 10px;
+      background: #fff;
+      color: var(--clarix-coral-dim);
+      font-weight: 600; font-size: 13px;
+      cursor: pointer;
+      transition: all 120ms;
+    }
+    .slot-toggles input { display: none; }
+    .slot-toggles input:checked + label {
+      background: var(--clarix-coral);
+      color: #fff;
+      border-color: var(--clarix-coral);
+      box-shadow: 0 3px 8px rgba(200,84,63,0.22);
+    }
+
+    .days-row {
+      display: flex; align-items: center; gap: 10px;
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--clarix-navy);
+    }
+    .days-row input {
+      width: 84px; height: 36px; padding: 0 12px;
+      border: 1px solid var(--clarix-line);
+      border-radius: 10px; font-size: 14px; text-align: right;
+      color: var(--clarix-navy); background: #fff;
+    }
+    .days-row input:focus { outline: none; border-color: var(--clarix-coral); }
+    .days-row .hint { font-size: 11px; color: var(--clarix-coral-dim); margin-left: auto; }
+
+    .existing-row {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--clarix-bg-soft);
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+    }
+    .existing-row .info { font-weight: 600; color: var(--clarix-navy); }
+    .existing-row .schedule { color: var(--clarix-coral-dim); font-size: 12px; margin-top: 2px; }
+    .existing-row .schedule .tag {
+      display: inline-block;
+      background: rgba(4,19,48,0.06);
+      padding: 1px 8px;
+      border-radius: 999px;
+      margin-right: 4px;
+      font-size: 11px;
+    }
+    .existing-row form { display: inline; }
+    .existing-row button {
+      background: transparent; border: 0;
+      color: var(--clarix-coral-dim);
+      font-size: 12px; font-weight: 600;
+      cursor: pointer;
+    }
+
+    .section-title-clarix {
+      font-size: 12px; font-weight: 700;
+      color: var(--clarix-coral-dim);
+      letter-spacing: 0.04em;
+      margin: 20px 4px 8px;
+    }
+  </style>
+</head>
+<body class="patient clarix">
+  <div class="patient-shell">
+    <div th:if="${isOnboarding}" class="step-pills">
+      <div class="step-pill" data-active="true"></div>
+      <div class="step-pill" data-active="true"></div>
+      <div class="step-pill" data-active="true"></div>
+    </div>
+    <div class="patient-greeting" th:if="${isOnboarding}">단계 3/3</div>
+    <th:block th:unless="${isOnboarding}">
+      <a class="clarix-back" th:href="@{/patient/me}" aria-label="뒤로 가기">‹</a>
+    </th:block>
+
+    <h1 class="patient-headline" th:text="${isOnboarding} ? '복용 중인 약을 등록해주세요' : '내 약 관리'">내 약 관리</h1>
+    <p style="color: var(--clarix-coral-dim); font-size: 14px; margin-top: 4px; line-height:1.5;">
+      복용 중인 약과 시간대를 등록해주세요.<br/>매일 봉투를 찢어 복약을 기록할 수 있어요.
+    </p>
+
+    <div class="section-title-clarix">활성 처방</div>
+    <div th:if="${#lists.isEmpty(existing)}"
+         style="color: rgba(4,19,48,0.4); font-size: 13px; padding: 8px 4px;">
+      등록된 약이 없습니다.
+    </div>
+    <div th:each="p : ${existing}" class="existing-row" style="flex-direction:column; align-items:stretch;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+        <div>
+          <div class="info" th:text="${p.medicationName}"></div>
+          <div class="schedule">
+            <th:block th:each="s : ${p.scheduleSlots()}">
+              <span class="tag" th:text="${s == 'morning'} ? '아침' : (${s == 'noon'} ? '점심' : '저녁')"></span>
+            </th:block>
+            <span style="margin-left:4px;" th:text="${p.daysSupply} + '일분'">—</span>
+          </div>
+        </div>
+        <form th:action="@{'/patient/onboarding/deactivate/' + ${p.id}}" method="post"
+              onsubmit="return confirm('이 약 처방을 중단할까요? 과거 기록은 유지됩니다.');">
+          <button type="submit">중단</button>
+        </form>
+      </div>
+      <form th:action="@{'/patient/onboarding/storage/' + ${p.id}}" method="post"
+            style="display:flex; gap:6px; margin-top:8px;">
+        <input type="text" name="storage" th:value="${p.storageLocation}"
+               placeholder="📍 보관 위치"
+               style="flex:1; height:32px; padding:0 10px; border:1px solid var(--clarix-line); border-radius:6px; font-size:12px;" />
+        <button type="submit" class="btn-clarix btn-clarix-ghost"
+                style="height:32px; padding:0 12px; font-size:12px;">저장</button>
+      </form>
+    </div>
+
+    <div class="section-title-clarix">새 약 추가 (최대 5개)</div>
+    <form th:action="@{/patient/onboarding}" method="post">
+      <div th:each="i : ${#numbers.sequence(1, 5)}" class="med-row">
+        <input type="text" th:name="'name' + ${i}" placeholder="약 이름 (예: 콘서타 18mg)" />
+        <div class="slot-toggles">
+          <input type="checkbox" th:id="'s' + ${i} + '_m'" th:name="'slots' + ${i}" value="morning" />
+          <label th:for="'s' + ${i} + '_m'">아침</label>
+          <input type="checkbox" th:id="'s' + ${i} + '_n'" th:name="'slots' + ${i}" value="noon" />
+          <label th:for="'s' + ${i} + '_n'">점심</label>
+          <input type="checkbox" th:id="'s' + ${i} + '_e'" th:name="'slots' + ${i}" value="evening" />
+          <label th:for="'s' + ${i} + '_e'">저녁</label>
+        </div>
+        <div class="days-row">
+          <label th:for="'days' + ${i}">처방 일수</label>
+          <input type="number" min="1" max="180" th:id="'days' + ${i}" th:name="'days' + ${i}" value="30" />
+          <span class="hint">종료 7일 전부터 ‘병원 가는 날’ 모드</span>
+        </div>
+        <input type="text" th:name="'storage' + ${i}"
+               placeholder="📍 약 보관 위치 (예: 침실 협탁, 부엌 서랍)"
+               style="width:100%; height:36px; margin-top:10px; padding:0 12px;
+                      border:1px solid var(--clarix-line); border-radius:8px;
+                      font-size:13px; background:#fff; color:var(--clarix-navy);" />
+      </div>
+
+      <div style="margin-top: 24px; display: flex; gap: 8px;">
+        <a th:href="@{/patient/}" class="btn-clarix btn-clarix-ghost"
+           style="flex:1;"
+           th:text="${isOnboarding} ? '건너뛰기' : '취소'">취소</a>
+        <button type="submit" class="btn-clarix btn-clarix-primary" style="flex:2;">저장</button>
+      </div>
+    </form>
+  </div>
+</body>
+</html>

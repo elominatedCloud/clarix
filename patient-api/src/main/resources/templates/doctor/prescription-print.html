@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>처방전 · Clarix</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; font-family: "Pretendard Variable", Pretendard, sans-serif; color: #0F172A; background: #F4F4F5; }
+    .rx-page {
+      max-width: 720px;
+      margin: 24px auto;
+      background: #fff;
+      padding: 36px 40px;
+      border: 1px solid #D1D5DB;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+    }
+    .rx-header {
+      text-align: center;
+      border-bottom: 2px solid #0F172A;
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+    }
+    .rx-header h1 { margin: 0 0 4px; font-size: 24px; letter-spacing: 0.04em; }
+    .rx-header .sub { font-size: 12px; color: #64748B; }
+    .rx-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px 24px;
+      margin-bottom: 24px;
+    }
+    .rx-grid .field {
+      border-bottom: 1px solid #E5E7EB;
+      padding-bottom: 8px;
+    }
+    .rx-grid .field .k {
+      font-size: 11px; font-weight: 600;
+      color: #64748B;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: block;
+      margin-bottom: 2px;
+    }
+    .rx-grid .field .v { font-size: 14px; font-weight: 500; }
+    h2.section-title {
+      margin: 24px 0 8px;
+      font-size: 13px; font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #0F172A;
+      border-bottom: 1px solid #0F172A;
+      padding-bottom: 4px;
+    }
+    table.rx-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 24px;
+    }
+    .rx-table th, .rx-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #E5E7EB;
+      text-align: left;
+      font-size: 13px;
+    }
+    .rx-table th {
+      background: #F4F4F5;
+      font-size: 11px;
+      font-weight: 700;
+      color: #64748B;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .rx-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .rx-empty { color: #94A3B8; font-size: 13px; padding: 24px 0; text-align: center; }
+    .rx-sign {
+      margin-top: 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 24px;
+    }
+    .rx-sign .col {
+      flex: 1;
+      border-top: 1px solid #0F172A;
+      padding-top: 8px;
+      font-size: 12px;
+    }
+    .rx-sign .col strong { display: block; font-size: 14px; margin-bottom: 4px; }
+    .rx-sign .stamp {
+      width: 56px; height: 56px;
+      border: 2px solid #B42318;
+      border-radius: 50%;
+      color: #B42318;
+      font-weight: 700;
+      font-size: 11px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .rx-actions {
+      max-width: 720px;
+      margin: 0 auto 16px;
+      display: flex; gap: 8px; padding: 0 8px;
+    }
+    .rx-actions a, .rx-actions button {
+      height: 32px; padding: 0 14px;
+      background: #fff; border: 1px solid #D1D5DB;
+      border-radius: 6px;
+      font-size: 13px; font-weight: 500;
+      color: #0F172A; cursor: pointer;
+      text-decoration: none;
+      display: inline-flex; align-items: center;
+    }
+    .rx-actions button.primary {
+      background: #5E6AD2; color: #fff; border-color: #5E6AD2;
+    }
+
+    @media print {
+      html, body { background: #fff; }
+      .rx-actions { display: none; }
+      .rx-page { box-shadow: none; border: 0; margin: 0; max-width: none; padding: 24px 28px; }
+      @page { margin: 16mm; size: A4; }
+    }
+  </style>
+</head>
+<body>
+  <div class="rx-actions">
+    <a th:href="@{'/doctor/patient/' + ${patient.id}}">← 환자 상세로 돌아가기</a>
+    <button type="button" class="primary" onclick="window.print()">🖨️ 인쇄 / PDF 저장</button>
+  </div>
+
+  <div class="rx-page">
+    <div class="rx-header">
+      <h1>처 방 전</h1>
+      <div class="sub">처방일자: <span th:text="${#temporals.format(issuedAt, 'yyyy년 M월 d일')}">·</span></div>
+    </div>
+
+    <div class="rx-grid">
+      <div class="field">
+        <span class="k">의료기관</span>
+        <span class="v" th:text="${me.hospital != null ? me.hospital.name : '—'}">·</span>
+      </div>
+      <div class="field">
+        <span class="k">진료과</span>
+        <span class="v" th:text="${me.hospital != null ? me.hospital.specialty : '—'}">·</span>
+      </div>
+      <div class="field">
+        <span class="k">의료기관 주소</span>
+        <span class="v" th:text="${me.hospital != null ? me.hospital.address : '—'}">·</span>
+      </div>
+      <div class="field">
+        <span class="k">의사명</span>
+        <span class="v" th:text="${me.name}">·</span>
+      </div>
+
+      <div class="field">
+        <span class="k">환자명</span>
+        <span class="v" th:text="${patient.name}">·</span>
+      </div>
+      <div class="field">
+        <span class="k">환자 ID</span>
+        <span class="v" style="font-family: monospace;"
+              th:text="${patient.id.toString().substring(0,8)}">·</span>
+      </div>
+      <div class="field" style="grid-column: span 2;">
+        <span class="k">환자 연락처</span>
+        <span class="v" th:text="${patient.email}">·</span>
+      </div>
+    </div>
+
+    <h2 class="section-title">처방 의약품</h2>
+    <div th:if="${#lists.isEmpty(rx)}" class="rx-empty">활성 처방이 없습니다.</div>
+    <table class="rx-table" th:if="${not #lists.isEmpty(rx)}">
+      <thead>
+        <tr>
+          <th>약품명</th>
+          <th>복용 시간대</th>
+          <th class="num">처방 일수</th>
+          <th class="num">총 복용 횟수</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:each="p : ${rx}">
+          <td th:text="${p.medicationName}">·</td>
+          <td>
+            <th:block th:each="s, st : ${p.scheduleSlots()}">
+              <span th:text="${s == 'morning'} ? '아침' : (${s == 'noon'} ? '점심' : '저녁')"></span>
+              <th:block th:unless="${st.last}"> · </th:block>
+            </th:block>
+          </td>
+          <td class="num" th:text="${p.daysSupply} + '일'">·</td>
+          <td class="num" th:text="${p.daysSupply * #lists.size(p.scheduleSlots())} + '회'">·</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 class="section-title">조제 시 참고사항</h2>
+    <p style="font-size: 12px; color: #64748B; line-height: 1.6;">
+      · 본 처방전의 사용 기간은 발행일로부터 14일입니다.<br/>
+      · 환자에게 약 보관·복용 시간 안내를 함께 제공해주세요.<br/>
+      · 처방 변경 사유가 있을 경우 처방 의사에게 문의 바랍니다.
+    </p>
+
+    <div class="rx-sign">
+      <div class="col">
+        <strong>처방 의사</strong>
+        <span th:text="${me.name} + ' (서명)'">·</span>
+      </div>
+      <div class="stamp">의사<br/>직인</div>
+    </div>
+  </div>
+</body>
+</html>

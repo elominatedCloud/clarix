@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Clarix · 마이페이지</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <link rel="stylesheet" th:href="@{/css/tokens.css}" />
+  <link rel="stylesheet" th:href="@{/css/patient.css}" />
+</head>
+<body class="patient clarix">
+  <div class="patient-shell">
+    <div class="patient-greeting">계정</div>
+    <h1 class="patient-headline">마이페이지</h1>
+
+    <div class="me-card">
+      <div class="avatar" th:text="${#strings.substring(me.name, 0, 1)}">U</div>
+      <div>
+        <div class="name" th:text="${me.name}">사용자</div>
+        <div class="email" th:text="${me.email}">user@example.com</div>
+      </div>
+    </div>
+
+    <div class="clarix-section-title">병원</div>
+    <a class="me-row link" th:if="${me.hospital != null}" th:href="@{/patient/welcome}">
+      <span class="me-key">연결된 병원</span>
+      <span class="me-val" th:text="${me.hospital.name}">병원</span>
+    </a>
+    <a class="me-row link" th:unless="${me.hospital != null}" th:href="@{/patient/welcome}">
+      <span class="me-key">병원이 연결되어 있지 않아요</span>
+      <span class="me-val" style="color:var(--clarix-coral)">연결하기</span>
+    </a>
+
+    <div class="clarix-section-title">건강 기록</div>
+    <a class="me-row link"
+       th:href="${phq9 != null} ? @{/patient/assessment/result} : @{/patient/assessment}">
+      <span class="me-key">PHQ-9 자가 검사</span>
+      <span class="me-val"
+            th:text="${phq9 != null} ? ${#temporals.format(phq9.createdAt, 'M월 d일 검사')} : '검사하기'">—</span>
+    </a>
+    <a class="me-row link" th:href="@{/patient/onboarding}">
+      <span class="me-key">복용 중인 약</span>
+      <span class="me-val" th:text="${rxCount} + '개 등록됨'">0</span>
+    </a>
+    <a class="me-row link" th:href="@{/patient/sharing}">
+      <span class="me-key">의료진 공유</span>
+      <span class="me-val">관리</span>
+    </a>
+
+    <div class="clarix-section-title">기타</div>
+    <form th:action="@{/auth/logout}" method="post" style="margin-top:8px;">
+      <button type="submit" class="btn-clarix btn-clarix-ghost" style="display:flex; width:100%;">로그아웃</button>
+    </form>
+  </div>
+
+  <nav class="clarix-tabbar">
+    <a th:href="@{/patient/}">
+      <span class="dot">🏠</span><span>홈</span>
+    </a>
+    <a th:href="@{/patient/calendar}">
+      <span class="dot">📅</span><span>캘린더</span>
+    </a>
+    <a th:href="@{/patient/me}" aria-current="page">
+      <span class="dot">👤</span><span>마이페이지</span>
+    </a>
+  </nav>
+</body>
+</html>

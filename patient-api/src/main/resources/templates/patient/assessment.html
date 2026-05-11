@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Clarix · 정신건강 자가검사</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <link rel="stylesheet" th:href="@{/css/tokens.css}" />
+  <link rel="stylesheet" th:href="@{/css/patient.css}" />
+  <style>
+    .step-pills { display:flex; gap:6px; margin-bottom: 16px; }
+    .step-pill { flex:1; height:4px; background: rgba(4,19,48,0.12); border-radius:2px; }
+    .step-pill[data-active="true"] { background: var(--clarix-coral); }
+
+    .qcard {
+      background: #fff;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 8px rgba(4,19,48,0.05);
+    }
+    .qcard .qnum {
+      font-size: 11px; font-weight: 700;
+      color: var(--clarix-coral-dim);
+      letter-spacing: 0.08em;
+    }
+    .qcard .qtext { font-weight: 600; margin: 4px 0 12px; line-height: 1.45; color: var(--clarix-navy); }
+    .opt-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .opt-row label {
+      height: 64px;
+      background: var(--clarix-bg-soft);
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 2px;
+      transition: background 120ms var(--easing), color 120ms var(--easing);
+    }
+    .opt-row input { display: none; }
+    .opt-row input:checked + label {
+      background: var(--clarix-coral);
+      color: #fff;
+      box-shadow: 0 4px 10px rgba(200,84,63,0.25);
+    }
+    .opt-row input:checked + label .l { color: rgba(255,255,255,0.85); }
+    .opt-row .v { font-size: 18px; font-weight: 700; color: var(--clarix-navy); }
+    .opt-row input:checked + label .v { color: #fff; }
+    .opt-row .l { font-size: 11px; color: var(--clarix-coral-dim); font-weight: 500; }
+
+    .info-banner {
+      display: flex; gap: 8px;
+      background: #fff; border-radius: 12px; padding: 12px 14px;
+      border-left: 4px solid var(--clarix-coral);
+      font-size: 13px; color: var(--clarix-navy); line-height: 1.5;
+      margin: 0 0 16px;
+    }
+    .info-banner strong { color: var(--clarix-coral-dim); }
+  </style>
+</head>
+<body class="patient clarix">
+  <div class="patient-shell">
+    <div th:if="${isOnboarding}">
+      <div class="step-pills">
+        <div class="step-pill" data-active="true"></div>
+        <div class="step-pill" data-active="true"></div>
+        <div class="step-pill"></div>
+      </div>
+      <div class="patient-greeting">단계 2/3</div>
+    </div>
+    <th:block th:unless="${isOnboarding}">
+      <a class="clarix-back" th:href="@{/patient/me}" aria-label="뒤로 가기">‹</a>
+    </th:block>
+
+    <h1 class="patient-headline">정신건강 자가검사</h1>
+    <div class="info-banner">
+      <span>지난 <strong>2주</strong> 동안 다음 문제로 얼마나 자주 방해를 받았나요? 솔직히 선택해주세요 (PHQ-9).</span>
+    </div>
+
+    <form th:action="@{/patient/assessment}" method="post">
+      <input type="hidden" name="onboarding" th:value="${isOnboarding} ? '1' : '0'" />
+
+      <div th:each="qtext, iter : ${questions}" class="qcard">
+        <div class="qnum" th:text="'Q' + ${iter.count}">Q1</div>
+        <div class="qtext" th:text="${qtext}"></div>
+        <div class="opt-row">
+          <th:block th:each="optLabel, j : ${optionLabels}">
+            <input type="radio"
+                   th:id="'q' + ${iter.count} + '_' + ${j.index}"
+                   th:name="'q' + ${iter.count}"
+                   th:value="${j.index}" required />
+            <label th:for="'q' + ${iter.count} + '_' + ${j.index}">
+              <span class="v" th:text="${j.index}">0</span>
+              <span class="l" th:text="${optLabel}"></span>
+            </label>
+          </th:block>
+        </div>
+      </div>
+
+      <div style="margin-top: 24px; display:flex; gap:8px;">
+        <a th:href="@{/patient/}" class="btn-clarix btn-clarix-ghost" style="flex:1;">취소</a>
+        <button type="submit" class="btn-clarix btn-clarix-primary" style="flex:2;">제출</button>
+      </div>
+    </form>
+  </div>
+</body>
+</html>

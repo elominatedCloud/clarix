@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Clarix · 오늘의 감정</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <link rel="stylesheet" th:href="@{/css/tokens.css}" />
+  <link rel="stylesheet" th:href="@{/css/patient.css}" />
+</head>
+<body class="patient clarix">
+  <div class="patient-shell">
+    <a class="clarix-back" th:href="@{/patient/}" aria-label="뒤로 가기">‹</a>
+
+    <h1 class="patient-headline">
+      <span th:text="${me.name}">사용자</span>님이 느낀 오늘의 감정을<br/>
+      골라주세요!
+    </h1>
+
+    <form th:action="@{/patient/mood/journal}" method="post" id="moodPickForm">
+      <div class="emotion-grid">
+        <th:block th:each="e : ${emotions}">
+          <label class="emotion-cell">
+            <input type="radio" name="emotion" th:value="${e.name()}"
+                   th:checked="${selected != null and selected.name() == e.name()}" />
+            <span class="emotion-bubble" th:attr="data-mood=${e.slug()}" th:text="${e.emoji()}">😀</span>
+            <span class="emotion-label" th:text="${e.label()}">감정</span>
+          </label>
+        </th:block>
+      </div>
+
+      <div class="clarix-cta-bar">
+        <button type="submit" class="btn-clarix btn-clarix-primary is-disabled" id="nextBtn" disabled>다음</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    (function () {
+      var form = document.getElementById('moodPickForm');
+      var btn  = document.getElementById('nextBtn');
+      function refresh() {
+        var picked = form.querySelector('input[name="emotion"]:checked');
+        if (picked) {
+          btn.disabled = false;
+          btn.classList.remove('is-disabled');
+        } else {
+          btn.disabled = true;
+          btn.classList.add('is-disabled');
+        }
+      }
+      form.addEventListener('change', refresh);
+      refresh();
+    })();
+  </script>
+</body>
+</html>

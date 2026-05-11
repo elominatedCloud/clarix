@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Clarix · PHQ-9 결과</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <link rel="stylesheet" th:href="@{/css/tokens.css}" />
+  <link rel="stylesheet" th:href="@{/css/patient.css}" />
+  <style>
+    .result-card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 24px 20px;
+      margin-top: 12px;
+      box-shadow: 0 4px 16px rgba(4,19,48,0.08);
+      text-align: center;
+    }
+    .result-card .severity-pill {
+      display: inline-block;
+      padding: 4px 14px;
+      border-radius: 999px;
+      font-size: 12px; font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .result-card .severity-pill[data-tone="ok"]     { background: #ECFDF5; color: #027A48; }
+    .result-card .severity-pill[data-tone="warn"]   { background: #FFFBEB; color: #B54708; }
+    .result-card .severity-pill[data-tone="danger"] { background: #FEF2F2; color: #B42318; }
+
+    .result-card .score {
+      font-size: 56px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--clarix-navy);
+      margin: 14px 0 4px;
+      font-variant-numeric: tabular-nums;
+    }
+    .result-card .score .denom {
+      font-size: 22px; color: var(--clarix-coral-dim); font-weight: 600;
+    }
+    .result-card .label {
+      color: var(--clarix-coral-dim);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+    .result-card .when {
+      margin-top: 6px;
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    .result-message {
+      background: var(--clarix-bg-soft);
+      color: var(--clarix-navy);
+      border-radius: 16px;
+      padding: 16px 18px;
+      margin-top: 14px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .result-message strong { color: var(--clarix-coral-dim); }
+
+    .history-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 16px;
+      margin-top: 14px;
+      box-shadow: 0 2px 10px rgba(4,19,48,0.05);
+    }
+    .history-card h3 {
+      margin: 0 0 10px;
+      font-size: 12px; font-weight: 700;
+      color: var(--clarix-coral-dim);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .history-spark { display: block; width: 100%; height: 60px; }
+    .history-list {
+      list-style: none; padding: 0; margin: 10px 0 0;
+      display: flex; flex-direction: column; gap: 4px;
+      font-size: 13px;
+    }
+    .history-list li {
+      display: flex; align-items: baseline; justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--clarix-line-soft);
+      color: var(--clarix-navy);
+    }
+    .history-list li:last-child { border-bottom: 0; }
+    .history-list .when { color: var(--text-muted); font-variant-numeric: tabular-nums; font-size: 12px; }
+  </style>
+</head>
+<body class="patient clarix">
+  <div class="patient-shell">
+    <a class="clarix-back" th:href="@{/patient/me}" aria-label="뒤로 가기">‹</a>
+
+    <h1 class="patient-headline">
+      <span th:text="${me.name}">사용자</span>님의<br/>PHQ-9 결과예요.
+    </h1>
+
+    <div class="result-card"
+         th:with="tone=${phq9.severity.name() == 'SEVERE' or phq9.severity.name() == 'MODERATELY_SEVERE' ? 'danger'
+                       : (phq9.severity.name() == 'MODERATE' ? 'warn' : 'ok')}">
+      <span class="severity-pill" th:attr="data-tone=${tone}" th:text="${phq9.severity.label()}">안정</span>
+      <div class="score">
+        <span th:text="${phq9.totalScore}">0</span><span class="denom"> /27</span>
+      </div>
+      <div class="label">PHQ-9 SCORE</div>
+      <div class="when" th:text="${#temporals.format(phq9.createdAt, 'yyyy년 M월 d일 HH:mm')} + ' 검사'">—</div>
+    </div>
+
+    <div class="result-message" th:switch="${phq9.severity.name()}">
+      <span th:case="'MINIMAL'">현재 우울 증상은 거의 없는 상태예요. 지금처럼 컨디션을 잘 챙겨가요.</span>
+      <span th:case="'MILD'"><strong>경미한</strong> 우울 신호가 보여요. 충분한 수면과 규칙적인 식사를 신경써보세요.</span>
+      <span th:case="'MODERATE'"><strong>중등도</strong> 우울 신호가 있어요. 다음 진료 시 주치의에게 결과를 공유해주세요.</span>
+      <span th:case="'MODERATELY_SEVERE'"><strong>중등도-중증</strong> 신호예요. 가능한 빠르게 의료진과 상담을 권장드려요.</span>
+      <span th:case="'SEVERE'"><strong>중증</strong> 신호가 잡혔어요. 곧바로 의료진 또는 가까운 사람에게 도움을 요청해주세요.</span>
+    </div>
+
+    <div class="history-card" th:if="${#lists.size(history) > 1}">
+      <h3>지난 검사 추이 (총 <span th:text="${#lists.size(history)}">1</span>회)</h3>
+      <ul class="history-list">
+        <li th:each="a : ${history}">
+          <span class="when" th:text="${#temporals.format(a.createdAt, 'yyyy-MM-dd HH:mm')}">—</span>
+          <span><strong th:text="${a.totalScore}">0</strong> · <span th:text="${a.severity.label()}">—</span></span>
+        </li>
+      </ul>
+    </div>
+
+    <div style="margin-top: 22px; display:flex; gap: 8px;">
+      <a th:href="@{/patient/assessment}" class="btn-clarix btn-clarix-ghost" style="flex:1;">다시 검사</a>
+      <a th:href="@{/patient/}" class="btn-clarix btn-clarix-primary" style="flex:2;">홈으로</a>
+    </div>
+  </div>
+</body>
+</html>

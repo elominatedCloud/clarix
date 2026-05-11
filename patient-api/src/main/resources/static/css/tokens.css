@@ -1,0 +1,137 @@
+/* Clarix shared tokens — used by both patient and doctor apps. */
+
+:root {
+  --text-primary: #0F172A;
+  --text-muted: #64748B;
+  --text-tertiary: #94A3B8;
+  --border-subtle: #E5E7EB;
+  --border-strong: #CBD5E1;
+
+  --danger: #EF4444;
+  --danger-bg: #FEF2F2;
+  --warn: #F59E0B;
+  --warn-bg: #FFFBEB;
+  --success: #10B981;
+  --success-bg: #ECFDF5;
+
+  /* Clarix patient palette (warm apricot / coral / navy) */
+  --clarix-bg:        #F8D7C8;
+  --clarix-bg-soft:   #FCEBE2;
+  --clarix-bg-deep:   #E9B7A4;
+  --clarix-coral:     #E97F66;
+  --clarix-coral-dim: #C8543F;
+  --clarix-navy:      #041330;
+  --clarix-ink:       #1F2A44;
+  --clarix-line:      rgba(4, 19, 48, 0.12);
+  --clarix-line-soft: rgba(4, 19, 48, 0.06);
+  --clarix-disabled:  #B6B6BC;
+
+  /* Emotion bubble gradients (radial — looks like the Mozy mood orbs) */
+  --grad-joy:    radial-gradient(circle at 30% 30%, #FFF3A8 0%, #FFE26B 35%, #C8E68C 75%, #98C8B5 100%);
+  --grad-sad:    radial-gradient(circle at 30% 30%, #F4F6FB 0%, #C8D7EC 40%, #C9B7DC 80%, #B79FCC 100%);
+  --grad-tired:  radial-gradient(circle at 30% 30%, #EFEBFB 0%, #C8C2E8 40%, #A4B0E0 75%, #94A4D2 100%);
+  --grad-angry:  radial-gradient(circle at 30% 30%, #FFD9D6 0%, #F58E84 40%, #D9514A 80%, #A8312C 100%);
+  --grad-down:   radial-gradient(circle at 30% 30%, #FFF1E1 0%, #F2DCC4 40%, #C8C5D0 80%, #9CA4B4 100%);
+  --grad-calm:   radial-gradient(circle at 30% 30%, #F2FCE9 0%, #C9EBC7 40%, #95D6B0 75%, #6FBF9A 100%);
+
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+
+  --easing: cubic-bezier(.4, 0, .2, 1);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; }
+input, textarea, select { font-family: inherit; }
+
+/* Buttons (shared base — apps override colors) */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 120ms var(--easing), transform 120ms var(--easing);
+}
+.btn:active { transform: scale(0.98); }
+.btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+
+/* Keyboard hint */
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 5px;
+  border: 1px solid var(--border-subtle);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  background: #fff;
+}
+
+/* Toast */
+.toast-host {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+.toast {
+  background: #0F172A;
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.18);
+  pointer-events: auto;
+  animation: toastIn 200ms var(--easing);
+}
+.toast[data-tone="danger"] { background: var(--danger); }
+.toast[data-tone="success"] { background: var(--success); }
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Spinner */
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border-subtle);
+  border-top-color: var(--text-primary);
+  border-radius: 50%;
+  animation: spin 600ms linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Visually hidden (a11y) */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}

@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Clarix · 의료진 공유</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <link rel="stylesheet" th:href="@{/css/tokens.css}" />
+  <link rel="stylesheet" th:href="@{/css/patient.css}" />
+  <style>
+    .doctor-card {
+      display: flex; align-items: center; justify-content: space-between;
+      background: #fff; border-radius: 14px;
+      padding: 14px 16px; margin-bottom: 8px;
+      box-shadow: 0 2px 8px rgba(4,19,48,0.05);
+    }
+    .doctor-card .name { font-weight: 700; color: var(--clarix-navy); }
+    .doctor-card .meta { color: var(--clarix-coral-dim); font-size: 12px; margin-top: 2px; }
+    .doctor-card form { display: inline; }
+
+    .pill-btn {
+      padding: 6px 14px; border-radius: 999px;
+      border: 1px solid transparent;
+      cursor: pointer; font-size: 12px; font-weight: 700;
+      transition: all 120ms;
+    }
+    .pill-btn.on {
+      background: var(--clarix-coral);
+      color: #fff;
+      box-shadow: 0 3px 8px rgba(200,84,63,0.22);
+    }
+    .pill-btn.off {
+      background: var(--clarix-bg-soft);
+      color: var(--clarix-coral-dim);
+      border-color: var(--clarix-line);
+    }
+
+    .grant-card {
+      background: #fff; border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(4,19,48,0.05);
+    }
+    .grant-card p { color: var(--clarix-coral-dim); font-size: 13px; margin: 0 0 12px; line-height: 1.5; }
+    .grant-card input {
+      width: 100%; height: 42px; padding: 0 14px;
+      border: 1px solid var(--clarix-line);
+      border-radius: 10px;
+      font-family: var(--font-mono); font-size: 12px;
+      color: var(--clarix-navy); background: #fff;
+      margin-bottom: 10px;
+    }
+    .grant-card input:focus {
+      outline: none; border-color: var(--clarix-coral);
+      box-shadow: 0 0 0 3px rgba(233,127,102,0.18);
+    }
+
+    .section-title-clarix {
+      font-size: 12px; font-weight: 700;
+      color: var(--clarix-coral-dim);
+      letter-spacing: 0.04em;
+      margin: 22px 4px 8px;
+    }
+
+    .empty-clarix {
+      text-align: center; padding: 24px 16px;
+      color: rgba(4,19,48,0.45); font-size: 13px;
+    }
+  </style>
+</head>
+<body class="patient clarix">
+  <div class="patient-shell">
+    <a class="clarix-back" th:href="@{/patient/me}" aria-label="뒤로 가기">‹</a>
+
+    <h1 class="patient-headline">의료진 공유</h1>
+    <p style="color: var(--clarix-coral-dim); font-size: 14px; margin: 6px 0 0; line-height: 1.5;">
+      연동된 의사만 내 기록을 볼 수 있어요.<br/>언제든 켜고 끌 수 있어요.
+    </p>
+
+    <div class="section-title-clarix">연동된 의사</div>
+    <div th:if="${#lists.isEmpty(shares)}" class="empty-clarix">
+      아직 연동된 의사가 없어요.
+    </div>
+    <div th:each="s : ${shares}" class="doctor-card">
+      <div>
+        <div class="name" th:text="${s.doctor.name}">의사</div>
+        <div class="meta" th:text="'부여 · ' + ${#temporals.format(s.grantedAt,'yyyy-MM-dd')}">—</div>
+        <div th:if="${s.active and s.lastViewedAt == null}" class="meta"
+             style="color:#B54708; margin-top:4px;">
+          🟡 아직 한 번도 열람하지 않았어요
+        </div>
+        <div th:if="${s.active and s.lastViewedAt != null
+                     and T(java.time.temporal.ChronoUnit).DAYS.between(s.lastViewedAt, T(java.time.OffsetDateTime).now()) >= 7}"
+             class="meta" style="color:#B42318; margin-top:4px;"
+             th:text="'🔴 마지막 열람 ' + ${#temporals.format(s.lastViewedAt,'yyyy-MM-dd')} + ' (오래됨)'">—</div>
+        <div th:if="${s.active and s.lastViewedAt != null
+                     and T(java.time.temporal.ChronoUnit).DAYS.between(s.lastViewedAt, T(java.time.OffsetDateTime).now()) < 7}"
+             class="meta" style="color:#027A48; margin-top:4px;"
+             th:text="'🟢 최근 열람 ' + ${#temporals.format(s.lastViewedAt,'M월 d일')}">—</div>
+      </div>
+      <form th:action="@{'/patient/sharing/' + ${s.id} + '/toggle'}" method="post">
+        <input type="hidden" name="active" th:value="${!s.active}" />
+        <button type="submit" class="pill-btn"
+                th:classappend="${s.active} ? 'on' : 'off'"
+                th:text="${s.active} ? '연동 켜짐' : '연동 꺼짐'">연동 꺼짐</button>
+      </form>
+    </div>
+
+    <div class="section-title-clarix" th:if="${not #lists.isEmpty(hospitalDoctors)}">
+      <span th:text="${me.hospital != null ? me.hospital.name + ' 의사' : '내 병원 의사'}">·</span>
+    </div>
+    <div th:if="${not #lists.isEmpty(hospitalDoctors)}" class="doctor-card"
+         th:each="d : ${hospitalDoctors}">
+      <div>
+        <div class="name" th:text="${d.name}">의사</div>
+        <div class="meta" th:text="${d.email}">—</div>
+      </div>
+      <form th:action="@{/patient/sharing/grant}" method="post">
+        <input type="hidden" name="doctorId" th:value="${d.id}" />
+        <button type="submit" class="pill-btn off" style="border-color: var(--clarix-coral); color: var(--clarix-coral);">+ 연동</button>
+      </form>
+    </div>
+
+    <details style="margin-top:18px;">
+      <summary style="cursor:pointer; color:var(--clarix-coral-dim); font-size:12px; font-weight:600; padding:6px 0;">UID로 직접 연동하기 (다른 병원 의사)</summary>
+      <div class="grant-card" style="margin-top:8px;">
+        <p>의사의 사용자 ID(UID)를 입력하세요. 의사 페이지 우측 상단에서 확인할 수 있어요.</p>
+        <form th:action="@{/patient/sharing/grant}" method="post">
+          <input type="text" name="doctorId" placeholder="0000-0000-0000-…" />
+          <button type="submit" class="btn-clarix btn-clarix-primary" style="display:flex; width:100%;">권한 부여</button>
+        </form>
+      </div>
+    </details>
+  </div>
+
+  <nav class="clarix-tabbar">
+    <a th:href="@{/patient/}">
+      <span class="dot">🏠</span><span>홈</span>
+    </a>
+    <a th:href="@{/patient/calendar}">
+      <span class="dot">📅</span><span>캘린더</span>
+    </a>
+    <a th:href="@{/patient/me}" aria-current="page">
+      <span class="dot">👤</span><span>마이페이지</span>
+    </a>
+  </nav>
+</body>
+</html>

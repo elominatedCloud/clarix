@@ -1,0 +1,880 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Clarix · 환자 상세</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jetbrains-mono@1.0.6/css/jetbrains-mono.css" />
+  <link rel="stylesheet" th:href="@{/css/tokens.css}" />
+  <link rel="stylesheet" th:href="@{/css/doctor.css}" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body class="doctor">
+  <div class="doctor-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand"><a th:href="@{/doctor/}" style="color:inherit; font-weight:700">← Clarix</a></div>
+      <div class="sidebar-section">Workspace</div>
+      <a class="sidebar-item" th:href="@{/doctor/}">All Patients</a>
+      <div class="sidebar-section">Admin</div>
+      <a class="sidebar-item" th:href="@{/doctor/admin}">직원 관리</a>
+      <div class="sidebar-section">Account</div>
+      <form th:action="@{/auth/logout}" method="post" class="sidebar-logout">
+        <button class="sidebar-item" style="border:0; background:transparent; width:100%; text-align:left; cursor:pointer">로그아웃</button>
+      </form>
+    </aside>
+
+    <main class="doctor-main">
+      <div class="topbar">
+        <div class="breadcrumb">
+          <a th:href="@{/doctor/}">All Patients</a>
+          <span class="sep">/</span>
+          <span class="current" th:text="${patient.name}">환자</span>
+        </div>
+        <div class="topbar-right">
+          <span class="avatar" th:text="${#strings.toUpperCase(#strings.substring(me.name,0,1))}">의</span>
+        </div>
+      </div>
+
+      <!-- Drug interaction alerts -->
+      <div th:if="${not #lists.isEmpty(interactionRisks)}"
+           style="padding: 12px 24px 0;">
+        <div th:each="r : ${interactionRisks}" class="doctor-alert"
+             th:classappend="${r.severity() == 'warn' ? ' warn' : ''}">
+          <span class="badge">상호작용</span>
+          <span><strong th:text="${r.drugA()} + ' + ' + ${r.drugB()}">·</strong>
+            · <span th:text="${r.message()}">·</span></span>
+        </div>
+      </div>
+
+      <!-- ===================== Patient detail layout B ===================== -->
+      <div class="pt-layout">
+
+        <!-- LEFT: sticky side -->
+        <aside class="pt-side">
+
+          <!-- 컴팩트 요약 -->
+          <div class="pt-summary">
+            <div class="pt-name" th:text="${header.name()}">환자명</div>
+            <div class="pt-sub"
+                 th:text="(${header.hospitalName() != null} ? ${header.hospitalName()} : '병원 미연결')
+                         + ' · 등록 ' + ${#temporals.format(header.registeredAt(),'yyyy-MM-dd')}">—</div>
+            <div class="pt-stats">
+              <div class="pt-stat">
+                <span class="k">처방</span>
+                <span class="v" th:text="${header.activePrescriptions()}">0</span>
+              </div>
+              <div class="pt-stat">
+                <span class="k">7일 복약</span>
+                <span class="v"
+                      th:attr="data-tone=${header.adherence7d() == null ? 'muted'
+                                         : (header.adherence7d() < 50 ? 'danger'
+                                         : (header.adherence7d() < 80 ? 'warn' : 'ok'))}"
+                      th:text="${header.adherence7d() == null ? '—' : header.adherence7d() + '%'}">—</span>
+              </div>
+              <div class="pt-stat">
+                <span class="k">7일 기분</span>
+                <span class="v" th:text="${header.avgMood7d() == null ? '—' : header.avgMood7d()}">—</span>
+              </div>
+              <div class="pt-stat">
+                <span class="k">PHQ-9</span>
+                <span class="v"
+                      th:attr="data-tone=${header.phq9Severity() == null ? 'muted'
+                                         : (header.phq9Severity().name() == 'SEVERE' or header.phq9Severity().name() == 'MODERATELY_SEVERE' ? 'danger'
+                                         : (header.phq9Severity().name() == 'MODERATE' ? 'warn' : 'ok'))}"
+                      th:text="${header.phq9Score() == null ? '—' : header.phq9Score()}">—</span>
+              </div>
+              <div class="pt-stat">
+                <span class="k">SOAP</span>
+                <span class="v" th:text="${header.totalSoapCount()}">0</span>
+              </div>
+              <div class="pt-stat">
+                <span class="k">마지막 복약</span>
+                <span class="v" style="font-size:12px;"
+                      th:text="${header.lastMedLogAt() == null ? '—' : #temporals.format(header.lastMedLogAt(),'M/d HH:mm')}">—</span>
+              </div>
+            </div>
+
+            <div class="pt-mood" th:if="${header.lastMoodEmotion() != null}"
+                 th:style="'--bub: var(--grad-' + ${header.lastMoodEmotion().slug()} + ');'">
+              <span class="bub" th:text="${header.lastMoodEmotion().emoji()}">😀</span>
+              <div class="body">
+                <strong th:text="'최근 ' + ${#temporals.format(header.lastMoodDate(),'M/d')} + ' · ' + ${header.lastMoodEmotion().label()}">—</strong>
+                <span th:text="${header.lastMoodJournal() != null and !#strings.isEmpty(header.lastMoodJournal())} ? ${header.lastMoodJournal()} : '일기 없음'">—</span>
+              </div>
+            </div>
+
+            <!-- footer: UID + 이메일 (작게) -->
+            <div style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border-subtle);
+                        font-size:10px; color:var(--text-tertiary); display:flex; flex-direction:column; gap:2px;">
+              <span style="font-family:var(--font-mono);"
+                    th:text="'UID ' + ${patient.id.toString().substring(0,8)} + '…'">·</span>
+              <span th:text="${patient.email}">·</span>
+            </div>
+          </div>
+
+          <!-- 특이사항 -->
+          <div class="metadata-grid">
+            <h3>특이사항</h3>
+            <div class="alert-list" th:if="${not #lists.isEmpty(header.alerts())}">
+              <div th:each="a : ${header.alerts()}" class="alert-row"
+                   th:attr="data-tone=${a.tone()}" th:text="${a.text()}">·</div>
+            </div>
+            <div class="alert-empty" th:if="${#lists.isEmpty(header.alerts())}">
+              특이사항 없음 — 안정적이에요.
+            </div>
+          </div>
+
+          <!-- 처방 관리 -->
+          <div class="metadata-grid">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+              <h3 style="margin:0;">처방 관리</h3>
+              <a th:if="${not #lists.isEmpty(rx)}"
+                 th:href="@{'/doctor/patient/' + ${patient.id} + '/prescription-print'}"
+                 target="_blank"
+                 style="font-size:11px; font-weight:600; color:#5E6AD2; text-decoration:none;
+                        border:1px solid #5E6AD2; padding:3px 8px; border-radius:4px;">
+                🖨️ 처방전
+              </a>
+            </div>
+            <div th:if="${#lists.isEmpty(rx)}" class="rx-empty">활성 처방 없음</div>
+            <ul class="rx-list" th:if="${not #lists.isEmpty(rx)}">
+              <li th:each="p : ${rx}" class="rx-item"
+                  th:with="adh=${rxAdherence[p.id]}">
+                <div>
+                  <div class="rx-name" th:text="${p.medicationName}">·</div>
+                  <div class="rx-schedule">
+                    <th:block th:each="s : ${p.scheduleSlots()}">
+                      <span class="tag" th:text="${s == 'morning'} ? '아침' : (${s == 'noon'} ? '점심' : '저녁')"></span>
+                    </th:block>
+                    <span class="rx-days"
+                          th:text="${p.daysSupply} + '일분 · ' + ${#temporals.format(p.endDate(), 'M/d')} + ' 종료'">—</span>
+                  </div>
+                  <div th:if="${adh != null}" class="rx-cumulative"
+                       th:text="'누적 복약 ' + ${adh.taken()} + ' / ' + ${adh.expected()} + '회'
+                              + (${adh.expected() > 0} ? ' (' + (${adh.taken() * 100 / adh.expected()}) + '%)' : '')">—</div>
+                </div>
+                <form th:action="@{'/doctor/prescription/' + ${p.id} + '/deactivate'}" method="post"
+                      onsubmit="return confirm('이 처방을 중단할까요?');">
+                  <button type="submit" class="rx-deactivate">중단</button>
+                </form>
+              </li>
+            </ul>
+            <details class="rx-add-details">
+              <summary>+ 새 처방 추가</summary>
+              <form class="rx-add-form" th:action="@{'/doctor/patient/' + ${patient.id} + '/prescription'}" method="post">
+                <input type="text" name="medicationName" placeholder="약 이름" required />
+                <div class="rx-slots">
+                  <label><input type="checkbox" name="slots" value="morning" /> 아침</label>
+                  <label><input type="checkbox" name="slots" value="noon" /> 점심</label>
+                  <label><input type="checkbox" name="slots" value="evening" /> 저녁</label>
+                </div>
+                <div class="rx-days-input">
+                  <label>일수 <input type="number" name="daysSupply" value="30" min="1" max="180" /></label>
+                </div>
+                <button type="submit" class="btn btn-primary">추가</button>
+              </form>
+            </details>
+          </div>
+
+          <!-- 지난 처방 기록 (비활성) -->
+          <div class="metadata-grid" th:if="${not #lists.isEmpty(inactiveRx)}">
+            <h3>지난 처방</h3>
+            <ul class="rx-list">
+              <li th:each="p : ${inactiveRx}" class="rx-item past">
+                <div>
+                  <div class="rx-name" th:text="${p.medicationName}">·</div>
+                  <div class="rx-schedule">
+                    <th:block th:each="s : ${p.scheduleSlots()}">
+                      <span class="tag" th:text="${s == 'morning'} ? '아침' : (${s == 'noon'} ? '점심' : '저녁')"></span>
+                    </th:block>
+                    <span class="rx-days"
+                          th:text="${p.daysSupply} + '일분 · ' + ${#temporals.format(p.createdAt.toLocalDate(), 'M/d')} + '~' + ${#temporals.format(p.endDate(), 'M/d')}">—</span>
+                  </div>
+                </div>
+                <span class="rx-past-tag">중단</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- 7일 운동 sparkline -->
+          <div class="metadata-grid">
+            <h3>7일 운동</h3>
+            <div class="spark-bars">
+              <div th:each="d : ${exerciseSpark}" class="bar"
+                   th:classappend="${d.minutes() == 0} ? ' zero'"
+                   th:style="'height:' + (${exerciseMaxMin > 0 ? d.minutes() * 50 / exerciseMaxMin + 6 : 2}) + 'px;'"
+                   th:attr="data-min=${d.minutes()}"></div>
+            </div>
+            <div class="spark-labels">
+              <span th:each="d : ${exerciseSpark}" th:text="${d.label()}">·</span>
+            </div>
+            <div class="spark-total" th:text="'합계 ' + ${exerciseTotalMin} + '분'">·</div>
+          </div>
+
+          <!-- 의사 메모 -->
+          <div class="metadata-grid">
+            <h3>의사 메모</h3>
+            <form th:action="@{'/doctor/patient/' + ${patient.id} + '/memo'}" method="post"
+                  style="display:flex; flex-direction:column; gap:6px;">
+              <textarea name="memo" rows="4"
+                        placeholder="진단 관찰 / 알러지 / 다음 진료 시 확인사항"
+                        style="width:100%; padding:8px; border:1px solid var(--border-subtle); border-radius:4px; font-family:inherit; font-size:12px; resize:vertical;"
+                        th:text="${patient.doctorMemo}"></textarea>
+              <button type="submit" class="btn btn-secondary"
+                      style="align-self:flex-end; height:26px; padding:0 12px; font-size:12px;">저장</button>
+            </form>
+          </div>
+
+        </aside>
+
+        <!-- RIGHT: main scroll area -->
+        <div class="pt-main">
+
+          <!-- Sticky mode tabs (헤더, 스크롤 시 상단 고정) -->
+          <div class="pt-tabs" role="tablist" aria-label="진료 모드">
+            <a th:href="@{'/doctor/patient/' + ${patient.id} + '?mode=chart'}"
+               th:attr="aria-current=${mode == 'chart'}">환자 정보</a>
+            <a th:href="@{'/doctor/patient/' + ${patient.id} + '?mode=charting'}"
+               th:attr="aria-current=${mode == 'charting'}">차팅</a>
+          </div>
+
+          <th:block th:if="${mode != 'charting'}">
+
+          <!-- 차트 -->
+          <div class="chart-card">
+            <div class="tabs" role="tablist">
+              <button class="tab" type="button" data-metric="episode"   aria-selected="true">에피소드</button>
+              <button class="tab" type="button" data-metric="adherence" aria-selected="false">복약</button>
+              <button class="tab" type="button" data-metric="mood"      aria-selected="false">기분</button>
+              <button class="tab" type="button" data-metric="exercise"  aria-selected="false">운동</button>
+              <button class="tab" type="button" data-metric="meal"      aria-selected="false">식사</button>
+              <button class="tab" type="button" data-metric="phq9"      aria-selected="false">PHQ-9</button>
+              <button class="tab" type="button" data-metric="overlay"   aria-selected="false">겹침</button>
+            </div>
+            <div class="chart-meta">
+              <span id="chart-title">30일 에피소드</span>
+              <span id="chart-range">—</span>
+            </div>
+            <!-- 처방 lifecycle row (에피소드 탭에서만 보임) -->
+            <div id="episode-rx" class="episode-rx-row" hidden></div>
+            <canvas id="metric-chart" height="220"></canvas>
+          </div>
+
+          <!-- 치료 이력 타임라인 -->
+          <div th:if="${!#lists.isEmpty(timeline)}" id="timelineSection">
+            <h3 style="font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); margin:0 0 8px;">치료 이력 타임라인</h3>
+            <div class="tl-filters" id="tlFilters">
+              <button type="button" data-kind="mood"     aria-pressed="true">😔 감정</button>
+              <button type="button" data-kind="med"      aria-pressed="true">💊 복약</button>
+              <button type="button" data-kind="exercise" aria-pressed="true">🏃 운동</button>
+              <button type="button" data-kind="soap"     aria-pressed="true">📝 차팅</button>
+              <button type="button" data-kind="phq9"     aria-pressed="true">📊 PHQ-9</button>
+              <button type="button" data-kind="meal"     aria-pressed="false">🍱 식사</button>
+            </div>
+            <ul class="tl-list" id="tlList">
+              <li th:each="e : ${timeline}" class="tl-row" th:attr="data-kind=${e.kind()}">
+                <th:block th:if="${e.kind() == 'mood' and e.emotion() != null}">
+                  <span class="tl-bub"
+                        th:style="'--bub: var(--grad-' + ${e.emotion().slug()} + ');'"
+                        th:text="${e.emotion().emoji()}">😀</span>
+                </th:block>
+                <th:block th:unless="${e.kind() == 'mood' and e.emotion() != null}">
+                  <span class="tl-dot-wrap"><span class="tl-dot"></span></span>
+                </th:block>
+                <span class="tl-when" th:text="${#temporals.format(e.when(),'MM-dd HH:mm')}">·</span>
+                <span class="tl-text">
+                  <th:block th:if="${e.kind() == 'mood' and e.emotion() != null}">
+                    <strong th:text="${e.emotion().label()}">기쁨</strong>
+                    <span th:if="${e.journal() != null and !#strings.isEmpty(e.journal())}"
+                          class="tl-journal"
+                          th:text="' — ' + ${#strings.abbreviate(e.journal(), 60)}">—</span>
+                  </th:block>
+                  <th:block th:unless="${e.kind() == 'mood' and e.emotion() != null}"
+                            th:text="${e.text()}">·</th:block>
+                </span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- 과거 차팅 -->
+          <div th:if="${!#lists.isEmpty(notes)}" class="past-charting">
+            <div class="past-charting-head">
+              <h3>과거 차팅</h3>
+              <span class="count" th:text="'총 ' + ${#lists.size(notes)} + '건'">·</span>
+            </div>
+            <div th:each="n : ${notes}" style="background:#fff; border:1px solid var(--border-subtle); border-radius:6px; padding:12px; margin-bottom:6px;">
+              <div style="display:flex; gap:8px; align-items:center; font-size:12px; color:var(--text-muted)">
+                <span class="status-pill"
+                      th:attr="data-tone=${n.kind.name() == 'SOAP' ? 'ok' : (n.kind.name() == 'NURSING' ? 'warn' : 'muted')}"
+                      style="text-transform:none; letter-spacing:0;"
+                      th:text="${n.kind.label()}">SOAP</span>
+                <span th:text="${#temporals.format(n.createdAt,'yyyy-MM-dd HH:mm')}">·</span>
+                <span th:if="${n.updatedAt != null}" style="color:var(--text-tertiary)"
+                      th:text="'(수정 ' + ${#temporals.format(n.updatedAt,'MM-dd HH:mm')} + ')'">·</span>
+                <span th:text="'· ' + ${n.doctor.name} + ' (' + ${n.doctor.role.label()} + ')'">·</span>
+                <a th:if="${n.doctor.id == me.id}"
+                   th:href="@{'/doctor/note/' + ${n.id} + '/edit'}"
+                   style="margin-left:auto; color:#5E6AD2; font-weight:600;">수정</a>
+              </div>
+              <div th:if="${n.subjective != null and !#strings.isEmpty(n.subjective)}"
+                   style="font-size:13px; margin-top:6px;"><b>S</b> <span th:text="${n.subjective}">·</span></div>
+              <div th:if="${n.objective != null and !#strings.isEmpty(n.objective)}"
+                   style="font-size:13px;"><b>O</b> <span th:text="${n.objective}">·</span></div>
+              <div th:if="${n.assessment != null and !#strings.isEmpty(n.assessment)}"
+                   style="font-size:13px;"><b>A</b> <span th:text="${n.assessment}">·</span></div>
+              <div th:if="${n.plan != null and !#strings.isEmpty(n.plan)}"
+                   style="font-size:13px;"><b>P</b> <span th:text="${n.plan}">·</span></div>
+            </div>
+          </div>
+          </th:block><!-- mode != 'charting' end -->
+
+          <th:block th:if="${mode == 'charting'}">
+
+          <!-- 현재 처방 사이클 평균 KPI -->
+          <div class="charting-averages-head">
+            <span class="label">
+              <th:block th:if="${averages.hasActiveRx()}">현재 처방 사이클</th:block>
+              <th:block th:unless="${averages.hasActiveRx()}">최근 14일</th:block>
+              ·
+              <strong th:text="${averages.windowDays()} + '일'">·</strong>
+              <span class="sub"
+                    th:text="'(' + ${#temporals.format(averages.windowStart(),'M/d')} + ' ~ ' + ${#temporals.format(T(java.time.LocalDate).now(),'M/d')} + ')'">—</span>
+            </span>
+          </div>
+          <div class="charting-averages">
+            <div class="avg-cell">
+              <span class="k">하루 식사</span>
+              <span class="v" th:text="${averages.mealsPerDay()} + '회'">·</span>
+            </div>
+            <div class="avg-cell">
+              <span class="k">하루 복약</span>
+              <span class="v" th:text="${averages.medsPerDay()} + '회'">·</span>
+            </div>
+            <div class="avg-cell">
+              <span class="k">하루 운동</span>
+              <span class="v" th:text="${averages.exerciseMinPerDay()} + '분'">·</span>
+            </div>
+            <div class="avg-cell">
+              <span class="k">평균 기분</span>
+              <span class="v" th:text="${averages.avgMood() == null ? '—' : averages.avgMood()}">·</span>
+            </div>
+          </div>
+
+          <!-- 처방 (차팅 중 추가/중단) -->
+          <div class="charting-rx-card">
+            <div class="charting-rx-head">
+              <h3>처방</h3>
+              <a th:if="${not #lists.isEmpty(rx)}"
+                 th:href="@{'/doctor/patient/' + ${patient.id} + '/prescription-print'}"
+                 target="_blank" class="rx-print-btn">🖨️ 처방전 발행</a>
+            </div>
+            <ul class="rx-list" th:if="${not #lists.isEmpty(rx)}">
+              <li th:each="p : ${rx}" class="rx-item"
+                  th:with="adh=${rxAdherence[p.id]}">
+                <div>
+                  <div class="rx-name" th:text="${p.medicationName}">·</div>
+                  <div class="rx-schedule">
+                    <th:block th:each="s : ${p.scheduleSlots()}">
+                      <span class="tag" th:text="${s == 'morning'} ? '아침' : (${s == 'noon'} ? '점심' : '저녁')"></span>
+                    </th:block>
+                    <span class="rx-days"
+                          th:text="${p.daysSupply} + '일분 · ' + ${#temporals.format(p.endDate(), 'M/d')} + ' 종료'">—</span>
+                  </div>
+                  <div th:if="${adh != null}" class="rx-cumulative"
+                       th:text="'누적 ' + ${adh.taken()} + ' / ' + ${adh.expected()} + '회'
+                              + (${adh.expected() > 0} ? ' (' + (${adh.taken() * 100 / adh.expected()}) + '%)' : '')">—</div>
+                </div>
+                <form th:action="@{'/doctor/prescription/' + ${p.id} + '/deactivate'}" method="post"
+                      onsubmit="return confirm('이 처방을 중단할까요?');">
+                  <button type="submit" class="rx-deactivate">중단</button>
+                </form>
+              </li>
+            </ul>
+
+            <details class="rx-add-details" id="chartingRxDetails">
+              <summary>+ 새 처방 추가</summary>
+              <form id="chartingRxForm" class="rx-add-form"
+                    th:action="@{'/doctor/patient/' + ${patient.id} + '/prescription'}" method="post"
+                    th:attr="data-active-meds=${activeMedNamesPipe}">
+                <input type="text" name="medicationName" id="rxNewName"
+                       placeholder="약 이름 (예: 콘서타 18mg)" required autocomplete="off" />
+                <div id="rxRiskBox" class="rx-risk-box" hidden></div>
+                <div class="rx-slots">
+                  <label><input type="checkbox" name="slots" value="morning" /> 아침</label>
+                  <label><input type="checkbox" name="slots" value="noon" /> 점심</label>
+                  <label><input type="checkbox" name="slots" value="evening" /> 저녁</label>
+                </div>
+                <div class="rx-days-input">
+                  <label>일수 <input type="number" name="daysSupply" value="30" min="1" max="180" /></label>
+                </div>
+                <button type="submit" class="btn btn-primary">추가</button>
+              </form>
+            </details>
+          </div>
+
+          <!-- 종합 차팅 — 자유 입력 + AI로 SOAP 정리 -->
+          <div class="charting-summary-card">
+            <div class="charting-summary-head">
+              <h3>종합 차팅</h3>
+              <span class="hint">자유롭게 입력하면 AI가 SOAP로 정리합니다</span>
+            </div>
+            <textarea id="ptSummary" rows="6"
+                      placeholder="예) 우울감 심함, 약 거부 빈번, 식욕저하, 다음 진료 시 sertraline 50mg 시작 검토"></textarea>
+            <div class="charting-summary-actions">
+              <button type="button" id="ptLlmBtn" class="btn btn-secondary">
+                <span class="btn-text">✨ AI로 SOAP 정리</span>
+                <span class="btn-spin" hidden>… 생성 중</span>
+              </button>
+              <span id="ptLlmStatus" class="pt-llm-status"></span>
+            </div>
+          </div>
+
+          <div class="soap-card charting-soap">
+            <h3>SOAP</h3>
+            <form th:action="@{'/doctor/patient/' + ${patient.id} + '/soap'}" method="post">
+              <div class="soap-grid">
+                <div><label>S · 주관적</label><textarea name="subjective" id="soapS"></textarea></div>
+                <div><label>O · 객관적</label><textarea name="objective" id="soapO"></textarea></div>
+                <div><label>A · 평가</label><textarea name="assessment" id="soapA"></textarea></div>
+                <div><label>P · 계획</label><textarea name="plan" id="soapP"></textarea></div>
+              </div>
+              <div class="soap-actions" style="display:flex; justify-content:flex-end;">
+                <button type="submit" class="btn btn-primary">저장</button>
+              </div>
+            </form>
+          </div>
+          </th:block><!-- mode == 'charting' end -->
+        </div><!-- pt-main end -->
+      </div><!-- pt-layout end -->
+    </main>
+  </div>
+
+  <script th:inline="javascript">
+    /*<![CDATA[*/
+    const PATIENT_ID = /*[[${patient.id}]]*/ '';
+    /*]]>*/
+  </script>
+  <script>
+    // SOAP sticky bar 확장 토글
+    (function () {
+      const tg = document.getElementById('ptSoapToggle');
+      const bar = document.getElementById('ptSoapSticky');
+      if (tg && bar) {
+        tg.addEventListener('click', () => {
+          bar.classList.toggle('is-expanded');
+          tg.textContent = bar.classList.contains('is-expanded') ? '축소' : '확장';
+        });
+      }
+    })();
+
+    // 종합 차팅 → Gemini로 SOAP autofill
+    (function () {
+      const btn = document.getElementById('ptLlmBtn');
+      const ta  = document.getElementById('ptSummary');
+      const st  = document.getElementById('ptLlmStatus');
+      if (!btn || !ta) return;
+      const fields = {
+        subjective: document.getElementById('soapS'),
+        objective:  document.getElementById('soapO'),
+        assessment: document.getElementById('soapA'),
+        plan:       document.getElementById('soapP'),
+      };
+      const txt  = btn.querySelector('.btn-text');
+      const spin = btn.querySelector('.btn-spin');
+      btn.addEventListener('click', async () => {
+        const free = ta.value.trim();
+        if (free.length < 5) {
+          st.textContent = '자유 노트를 좀 더 적어주세요';
+          st.dataset.tone = 'error';
+          return;
+        }
+        btn.disabled = true;
+        txt.hidden = true; spin.hidden = false;
+        st.textContent = ''; st.dataset.tone = '';
+        try {
+          const fd = new FormData();
+          fd.append('freeText', free);
+          // CSRF 토큰 (Thymeleaf form은 자동 포함되지만 fetch는 수동)
+          const csrfMeta = document.querySelector('meta[name="_csrf"]');
+          const csrfHdr  = document.querySelector('meta[name="_csrf_header"]');
+          const headers = {};
+          if (csrfMeta && csrfHdr) headers[csrfHdr.content] = csrfMeta.content;
+
+          const r = await fetch(`/doctor/patient/${PATIENT_ID}/llm-soap`, {
+            method: 'POST',
+            headers,
+            body: fd,
+          });
+          if (!r.ok) {
+            const err = await r.text();
+            throw new Error(r.status + ' · ' + err.slice(0, 200));
+          }
+          const j = await r.json();
+          if (j.subjective) fields.subjective.value = j.subjective;
+          if (j.objective)  fields.objective.value  = j.objective;
+          if (j.assessment) fields.assessment.value = j.assessment;
+          if (j.plan)       fields.plan.value       = j.plan;
+          st.textContent = '✓ SOAP에 채워졌습니다 — 검토 후 저장하세요';
+          st.dataset.tone = 'ok';
+          // 환자 정보 모드(sticky bar)면 확장. 차팅 탭에선 SOAP가 이미 큼.
+          const sticky = document.getElementById('ptSoapSticky');
+          if (sticky) sticky.classList.add('is-expanded');
+        } catch (e) {
+          console.error('[llm-soap]', e);
+          st.textContent = '실패 · ' + e.message;
+          st.dataset.tone = 'error';
+        } finally {
+          btn.disabled = false;
+          txt.hidden = false; spin.hidden = true;
+        }
+      });
+    })();
+
+    let chart;
+    let payload;
+    let activeMetric = 'episode';
+
+    const CORAL      = '#E97F66';
+    const CORAL_DIM  = '#C8543F';
+    const CORAL_SOFT = 'rgba(233,127,102,0.18)';
+    const NAVY       = '#041330';
+    const NAVY_SOFT  = 'rgba(4,19,48,0.10)';
+    const GREEN      = '#10B981';
+    const GREEN_SOFT = 'rgba(16,185,129,0.65)';
+    const RED        = '#EF4444';
+    const RED_SOFT   = 'rgba(239,68,68,0.65)';
+
+    if (document.getElementById('metric-chart')) {
+      fetch(`/doctor/patient/${PATIENT_ID}/timeline?days=30`)
+        .then(r => {
+          if (!r.ok) throw new Error('timeline ' + r.status);
+          return r.json();
+        })
+        .then(data => {
+          payload = data;
+          document.getElementById('chart-range').textContent =
+            `${data.labels[0]} ~ ${data.labels[data.labels.length-1]}`;
+          renderMetric(activeMetric);
+        })
+        .catch(err => {
+          console.error('[timeline]', err);
+          document.getElementById('chart-range').textContent = '데이터 로드 실패';
+        });
+    }
+
+    function shortLabels() { return payload.labels.map(d => d.slice(5)); }
+
+    function renderEpisodeRx(host) {
+      if (!payload || !host) return;
+      const lifecycles = payload.prescriptionLifecycles || [];
+      const labels = payload.labels;
+      if (lifecycles.length === 0) {
+        host.innerHTML = '<div class="episode-rx-empty">활성 처방이 없습니다.</div>';
+        return;
+      }
+      const palette = ['#E97F66', '#5E6AD2', '#10B981', '#FB7185', '#0A84FF'];
+      const dayCount = labels.length;
+      const firstLabel = labels[0];   // 'yyyy-MM-dd'
+      const lastLabel  = labels[labels.length - 1];
+
+      function pct(date) {
+        // date = 'yyyy-MM-dd'
+        if (date < firstLabel) return 0;
+        if (date > lastLabel)  return 100;
+        const idx = labels.indexOf(date);
+        if (idx >= 0) return (idx / (dayCount - 1)) * 100;
+        // 라벨 사이 범위 — 비례
+        const start = new Date(firstLabel).getTime();
+        const end   = new Date(lastLabel).getTime();
+        const cur   = new Date(date).getTime();
+        return Math.max(0, Math.min(100, ((cur - start) / (end - start)) * 100));
+      }
+
+      host.innerHTML = '';
+      lifecycles.forEach((rx, i) => {
+        const left  = pct(rx.startDate);
+        const right = pct(rx.endDate);
+        const width = Math.max(2, right - left);
+        const div = document.createElement('div');
+        div.className = 'episode-rx';
+        div.style.left  = left + '%';
+        div.style.width = width + '%';
+        div.style.background = palette[i % palette.length];
+        div.style.top  = (i * 22) + 'px';
+        div.title = `${rx.name} · ${rx.startDate} ~ ${rx.endDate}`;
+        div.textContent = rx.name;
+        host.appendChild(div);
+      });
+      host.style.height = (lifecycles.length * 22 + 4) + 'px';
+    }
+
+    function renderMetric(metric) {
+      if (!payload) return;
+      if (chart) chart.destroy();
+      const ctx = document.getElementById('metric-chart').getContext('2d');
+      const labels = shortLabels();
+      document.getElementById('chart-title').textContent = ({
+        episode:   '30일 에피소드 — 처방·복약·기분·PHQ-9·차팅',
+        adherence: '30일 복약 (막대 = 복용, 점선 = 목표 · 차이 = 미복용)',
+        mood:      '30일 기분 점수 (1~5)',
+        exercise:  '30일 운동 시간 (분/일)',
+        meal:      '30일 식사 횟수 (회/일)',
+        phq9:      'PHQ-9 추이 (모든 검사)',
+        overlay:   '복약 vs 기분 vs 운동',
+      })[metric];
+
+      // 처방 lifecycle row는 에피소드 탭에서만
+      const rxRow = document.getElementById('episode-rx');
+      if (rxRow) {
+        if (metric === 'episode') {
+          renderEpisodeRx(rxRow);
+          rxRow.hidden = false;
+        } else {
+          rxRow.hidden = true;
+        }
+      }
+
+      const baseOpts = {
+        responsive: true,
+        plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+          y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 11 } } },
+        },
+      };
+
+      if (metric === 'episode') {
+        // 30일 mixed: 복약 stacked bar (taken green) + 기분 line (coral) + PHQ-9 점 (navy) + 차팅 점 (보라)
+        const phqRows = payload.phq9 || [];
+        const phqArr = labels.map(_ => null);
+        phqRows.forEach(r => {
+          const k = r.date.slice(5);
+          const idx = labels.indexOf(k);
+          if (idx >= 0) phqArr[idx] = r.score;
+        });
+        const noteArr = labels.map(_ => null);
+        (payload.noteDates || []).forEach(d => {
+          const idx = labels.indexOf(d.slice(5));
+          if (idx >= 0) noteArr[idx] = 5; // y축 고정 위치 (시각용)
+        });
+
+        chart = new Chart(ctx, {
+          type: 'bar',
+          data: { labels, datasets: [
+            { type: 'bar', label: '복약', data: payload.medicationTaken,
+              backgroundColor: GREEN_SOFT, borderColor: GREEN, borderWidth: 1, borderRadius: 3, yAxisID: 'y' },
+            { type: 'line', label: '기분', data: payload.mood,
+              borderColor: CORAL, backgroundColor: 'transparent',
+              tension: 0.35, spanGaps: true, pointRadius: 3, pointBackgroundColor: CORAL, yAxisID: 'y2' },
+            { type: 'line', label: 'PHQ-9', data: phqArr,
+              borderColor: 'transparent', backgroundColor: NAVY,
+              pointBackgroundColor: NAVY, pointRadius: 6, pointHoverRadius: 8,
+              showLine: false, yAxisID: 'y3' },
+            { type: 'line', label: '차팅', data: noteArr,
+              borderColor: 'transparent', backgroundColor: '#5E6AD2',
+              pointBackgroundColor: '#5E6AD2', pointRadius: 4, pointStyle: 'rectRot',
+              showLine: false, yAxisID: 'y4' },
+          ]},
+          options: {
+            ...baseOpts,
+            plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } },
+            scales: {
+              x: { ...baseOpts.scales.x, ticks: { autoSkip: true, maxTicksLimit: 10, font: { size: 10 } } },
+              y:  { position: 'left',  beginAtZero: true, ticks: { stepSize: 1 }, title: { display: true, text: '복약(회)', font: { size: 10 } } },
+              y2: { position: 'right', min: 0, max: 5, grid: { drawOnChartArea: false }, title: { display: true, text: '기분', font: { size: 10 } } },
+              y3: { display: false, min: 0, max: 27 },
+              y4: { display: false, min: 0, max: 10 },
+            },
+          },
+        });
+      } else if (metric === 'adherence') {
+        const expected = payload.expectedPerDay;
+        const expectedLine = labels.map(_ => expected);
+        chart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [
+              { label: '복용 (TAKEN)',  data: payload.medicationTaken,
+                backgroundColor: GREEN_SOFT, borderColor: GREEN, borderWidth: 1, borderRadius: 4 },
+              { type: 'line', label: '목표 (expected)', data: expectedLine,
+                borderColor: NAVY, backgroundColor: 'transparent',
+                borderDash: [4, 4], borderWidth: 1.5, pointRadius: 0, tension: 0 },
+            ],
+          },
+          options: {
+            ...baseOpts,
+            scales: {
+              x: baseOpts.scales.x,
+              y: { ...baseOpts.scales.y,
+                   suggestedMax: Math.max(expected, ...payload.medicationTaken) + 1 },
+            },
+          },
+        });
+      } else if (metric === 'mood') {
+        chart = new Chart(ctx, {
+          type: 'line',
+          data: { labels, datasets: [{
+            label: '기분', data: payload.mood,
+            borderColor: CORAL, backgroundColor: CORAL_SOFT,
+            fill: true, tension: 0.35, spanGaps: true, pointRadius: 4, pointBackgroundColor: CORAL,
+          }]},
+          options: { ...baseOpts, scales: { x: baseOpts.scales.x, y: { min: 0, max: 5, ticks: { stepSize: 1 } } } },
+        });
+      } else if (metric === 'exercise') {
+        chart = new Chart(ctx, {
+          type: 'bar',
+          data: { labels, datasets: [{
+            label: '운동 (분)', data: payload.exerciseMin,
+            backgroundColor: CORAL_SOFT, borderColor: CORAL, borderWidth: 1, borderRadius: 4,
+          }]},
+          options: { ...baseOpts, scales: { x: baseOpts.scales.x, y: { beginAtZero: true } } },
+        });
+      } else if (metric === 'meal') {
+        chart = new Chart(ctx, {
+          type: 'bar',
+          data: { labels, datasets: [{
+            label: '식사 (회)', data: payload.mealCount,
+            backgroundColor: 'rgba(149,213,178,0.65)', borderColor: '#6FBF9A', borderWidth: 1, borderRadius: 4,
+          }]},
+          options: { ...baseOpts, scales: { x: baseOpts.scales.x, y: { beginAtZero: true, ticks: { stepSize: 1 } } } },
+        });
+      } else if (metric === 'phq9') {
+        const phqRows  = payload.phq9 || [];
+        const phqLabels = phqRows.map(r => r.date.slice(5));
+        const phqData   = phqRows.map(r => r.score);
+        document.getElementById('chart-range').textContent =
+          phqRows.length === 0 ? '검사 기록 없음'
+          : `${phqRows[0].date} ~ ${phqRows[phqRows.length-1].date} · ${phqRows.length}회`;
+        chart = new Chart(ctx, {
+          type: 'line',
+          data: { labels: phqLabels, datasets: [{
+            label: 'PHQ-9', data: phqData,
+            borderColor: NAVY, backgroundColor: NAVY_SOFT,
+            fill: true, tension: 0.25, pointRadius: 5, pointBackgroundColor: NAVY,
+          }]},
+          options: {
+            ...baseOpts,
+            scales: {
+              x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+              y: { min: 0, max: 27, ticks: { stepSize: 5 } },
+            },
+          },
+        });
+      } else if (metric === 'overlay') {
+        chart = new Chart(ctx, {
+          type: 'bar',
+          data: { labels, datasets: [
+            { type: 'bar',  label: '복약',  data: payload.medicationTaken,
+              backgroundColor: GREEN_SOFT, borderColor: GREEN, borderWidth: 1, borderRadius: 4, yAxisID: 'y' },
+            { type: 'line', label: '운동(분)', data: payload.exerciseMin,
+              borderColor: CORAL_DIM, backgroundColor: 'transparent',
+              tension: 0.3, pointRadius: 3, yAxisID: 'y3' },
+            { type: 'line', label: '기분',  data: payload.mood,
+              borderColor: CORAL, backgroundColor: 'transparent',
+              tension: 0.35, spanGaps: true, pointRadius: 4, pointBackgroundColor: CORAL, yAxisID: 'y2' },
+          ]},
+          options: {
+            ...baseOpts,
+            scales: {
+              x:  baseOpts.scales.x,
+              y:  { position: 'left',  beginAtZero: true, ticks: { stepSize: 1 }, title: { display: true, text: '복약(회)', font: { size: 10 } } },
+              y2: { position: 'right', min: 0, max: 5, grid: { drawOnChartArea: false }, title: { display: true, text: '기분(1~5)', font: { size: 10 } } },
+              y3: { display: false, beginAtZero: true },
+            },
+          },
+        });
+      }
+    }
+
+    if (document.getElementById('metric-chart')) {
+      document.querySelectorAll('.tab[data-metric]').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.tab[data-metric]').forEach(t => t.setAttribute('aria-selected', 'false'));
+          tab.setAttribute('aria-selected', 'true');
+          activeMetric = tab.dataset.metric;
+          if (payload) renderMetric(activeMetric);
+        });
+      });
+    }
+
+    // 처방 추가 시 약물 상호작용 사전 체크 (차팅 탭의 폼)
+    (function () {
+      const form  = document.getElementById('chartingRxForm');
+      const input = document.getElementById('rxNewName');
+      const box   = document.getElementById('rxRiskBox');
+      if (!form || !input || !box) return;
+      const activeMeds = (form.dataset.activeMeds || '').split('|').filter(s => s.trim().length > 0);
+      let lastRisks = [];
+      let debounce = null;
+
+      function severityTone(risks) {
+        if (risks.some(r => r.severity === 'danger')) return 'danger';
+        return 'warn';
+      }
+
+      function render(risks) {
+        if (!risks || risks.length === 0) { box.hidden = true; box.innerHTML = ''; return; }
+        box.hidden = false;
+        box.dataset.tone = severityTone(risks);
+        box.innerHTML = risks.map(r => {
+          const tag = r.severity === 'danger' ? '🚨 위험' : '⚠️ 주의';
+          return `<span class="risk-row"><strong>${tag} · ${r.drugA} + ${r.drugB}</strong> — ${r.message}</span>`;
+        }).join('');
+      }
+
+      async function check(extra) {
+        const meds = activeMeds.slice();
+        if (extra && extra.trim().length > 0) meds.push(extra.trim());
+        if (meds.length < 2) { lastRisks = []; render([]); return; }
+        const fd = new FormData();
+        meds.forEach(m => fd.append('med', m));
+        try {
+          const r = await fetch('/doctor/drug-check', { method: 'POST', body: fd });
+          if (!r.ok) throw new Error(r.status);
+          lastRisks = await r.json();
+          render(lastRisks);
+        } catch (e) { console.error('[drug-check]', e); }
+      }
+
+      input.addEventListener('input', () => {
+        clearTimeout(debounce);
+        debounce = setTimeout(() => check(input.value), 250);
+      });
+
+      form.addEventListener('submit', (e) => {
+        if (lastRisks.some(r => r.severity === 'danger')) {
+          if (!window.confirm('🚨 위험 상호작용이 감지됐어요. 그래도 처방을 추가할까요?')) {
+            e.preventDefault();
+          }
+        }
+      });
+    })();
+
+    // Timeline filter chips
+    (function () {
+      const filters = document.getElementById('tlFilters');
+      const list    = document.getElementById('tlList');
+      if (!filters || !list) return;
+      function applyFilter() {
+        const enabled = new Set(
+          [...filters.querySelectorAll('button[aria-pressed="true"]')].map(b => b.dataset.kind)
+        );
+        list.querySelectorAll('.tl-row').forEach(row => {
+          const k = row.dataset.kind;
+          row.dataset.hidden = enabled.has(k) ? 'false' : 'true';
+        });
+      }
+      filters.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const cur = btn.getAttribute('aria-pressed') === 'true';
+          btn.setAttribute('aria-pressed', cur ? 'false' : 'true');
+          applyFilter();
+        });
+      });
+      applyFilter();
+    })();
+  </script>
+</body>
+</html>

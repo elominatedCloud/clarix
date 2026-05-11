@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Clarix · 차팅</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <link rel="stylesheet" th:href="@{/css/tokens.css}" />
+  <link rel="stylesheet" th:href="@{/css/doctor.css}" />
+</head>
+<body class="doctor">
+  <div class="doctor-shell">
+    <main class="doctor-main">
+      <div class="content" style="padding:32px;">
+        <div style="background:#FFFBEB; border:1px solid #FCD34D; border-radius:6px; padding:16px; max-width:480px; font-size:13px; color:#854D0E;">
+          <strong>병원이 설정되어 있지 않습니다.</strong><br/>
+          의사에게 초대 발급을 다시 요청하거나, 병원이 설정된 뒤 다시 로그인해주세요.
+        </div>
+        <form th:action="@{/auth/logout}" method="post" style="margin-top:16px;">
+          <button class="btn btn-ghost">로그아웃</button>
+        </form>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

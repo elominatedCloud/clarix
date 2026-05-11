@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Clarix · 오늘의 무드 미리보기</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <link rel="stylesheet" th:href="@{/css/tokens.css}" />
+  <link rel="stylesheet" th:href="@{/css/patient.css}" />
+</head>
+<body class="patient clarix">
+  <div class="patient-shell">
+    <h1 class="patient-headline" style="text-align:center; margin-top:24px;">
+      <span th:text="${me.name}">사용자</span>님의 오늘하루 무드를<br/>
+      이렇게 꾸밀까요?
+    </h1>
+
+    <div class="journal-stage" style="margin-top:16px;">
+      <span class="emotion-bubble" th:attr="data-mood=${emotion.slug()}" th:text="${emotion.emoji()}">😢</span>
+    </div>
+
+    <div class="journal-preview-card" th:text="${journal}">오늘은 시험을 망쳤어!!!! 울고싶은 기분 ㅠㅠ</div>
+
+    <div class="clarix-cta-bar">
+      <form th:action="@{/patient/mood/journal}" method="post" style="flex:1">
+        <input type="hidden" name="emotion" th:value="${emotion.name()}" />
+        <input type="hidden" name="journal" th:value="${journal}" />
+        <button type="submit" class="btn-clarix btn-clarix-ghost" style="width:100%">수정</button>
+      </form>
+      <form th:action="@{/patient/mood/save}" method="post" style="flex:2">
+        <input type="hidden" name="emotion" th:value="${emotion.name()}" />
+        <input type="hidden" name="journal" th:value="${journal}" />
+        <button type="submit" class="btn-clarix btn-clarix-primary" style="width:100%">저장할게요</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

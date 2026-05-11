@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Clarix · 차팅 수정</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <link rel="stylesheet" th:href="@{/css/tokens.css}" />
+  <link rel="stylesheet" th:href="@{/css/doctor.css}" />
+</head>
+<body class="doctor">
+  <div class="doctor-shell">
+    <main class="doctor-main">
+      <div class="topbar">
+        <div class="breadcrumb">
+          <a th:href="${backUrl}">← 환자 화면으로</a>
+          <span class="sep">/</span>
+          <span class="current">차팅 수정</span>
+        </div>
+        <div class="topbar-right">
+          <span class="avatar" th:text="${#strings.toUpperCase(#strings.substring(me.name,0,1))}">·</span>
+        </div>
+      </div>
+
+      <div class="content" style="max-width:840px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+          <span class="status-pill"
+                th:attr="data-tone=${note.kind.name() == 'SOAP' ? 'ok' : (note.kind.name() == 'NURSING' ? 'warn' : 'muted')}"
+                style="text-transform:none; letter-spacing:0;"
+                th:text="${note.kind.label()}">·</span>
+          <h2 style="margin:0;" th:text="${note.patient.name} + ' · 차팅 수정'">·</h2>
+        </div>
+        <p style="color:var(--text-muted); font-size:12px; margin:0 0 12px;">
+          작성 <span th:text="${#temporals.format(note.createdAt,'yyyy-MM-dd HH:mm')}">·</span>
+          <th:block th:if="${note.updatedAt != null}">
+            · 마지막 수정 <span th:text="${#temporals.format(note.updatedAt,'yyyy-MM-dd HH:mm')}">·</span>
+          </th:block>
+        </p>
+
+        <div class="soap-card">
+          <form th:action="${backUrl.startsWith('/staff') ? '/staff/note/' + note.id + '/edit'
+                                                          : '/doctor/note/' + note.id + '/edit'}" method="post">
+            <div class="soap-grid">
+              <div><label>S · 주관적</label><textarea name="subjective" th:text="${note.subjective}"></textarea></div>
+              <div><label>O · 객관적</label><textarea name="objective" th:text="${note.objective}"></textarea></div>
+              <div><label>A · 평가</label><textarea name="assessment" th:text="${note.assessment}"></textarea></div>
+              <div><label>P · 계획</label><textarea name="plan" th:text="${note.plan}"></textarea></div>
+            </div>
+            <div class="soap-actions">
+              <a th:href="${backUrl}" class="btn btn-ghost">취소</a>
+              <button type="submit" class="btn btn-primary">저장</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

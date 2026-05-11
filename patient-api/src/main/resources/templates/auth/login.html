@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Clarix · 로그인</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <link rel="stylesheet" th:href="@{/css/tokens.css}" />
+  <link rel="stylesheet" th:href="@{/css/patient.css}" />
+</head>
+<body class="patient clarix auth-page">
+  <div class="patient-shell">
+    <div class="auth-card">
+      <h1>로그인</h1>
+      <p class="subtitle">Clarix에 다시 오신 것을 환영합니다.</p>
+      <p th:if="${error}" th:text="${error}" class="auth-error"></p>
+      <form th:action="@{/auth/login}" method="post" novalidate>
+        <div class="field">
+          <label for="email">이메일</label>
+          <input type="email" id="email" name="email" autocomplete="email" required />
+        </div>
+        <div class="field">
+          <label for="password">비밀번호</label>
+          <input type="password" id="password" name="password" autocomplete="current-password" required minlength="6" />
+        </div>
+        <button type="submit" class="btn-clarix btn-clarix-primary">로그인</button>
+      </form>
+      <div class="auth-footer">
+        계정이 없으신가요?
+        <a th:href="@{/auth/signup(role=${role})}">회원가입</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

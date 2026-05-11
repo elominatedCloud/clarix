@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Clarix · 병원 설정</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <link rel="stylesheet" th:href="@{/css/tokens.css}" />
+  <link rel="stylesheet" th:href="@{/css/doctor.css}" />
+  <style>
+    .welcome-shell { max-width: 720px; margin: 24px auto; padding: 0 16px; }
+    .tab-row { display:flex; gap:6px; margin-bottom: 14px; }
+    .tab-row a {
+      flex:1; height:36px; line-height:36px; text-align:center;
+      background:#fff; border: 1px solid var(--border-subtle); border-radius:6px;
+      color: var(--text-muted); font-weight:500; font-size:13px;
+      text-decoration:none;
+    }
+    .tab-row a.active { background: #5E6AD2; color:#fff; border-color: #5E6AD2; }
+    .h-card {
+      background:#fff; border:1px solid var(--border-subtle); border-radius:6px;
+      padding:14px 16px; margin-bottom:8px;
+    }
+    .h-card .name { font-weight:600; }
+    .h-card .meta { color: var(--text-muted); font-size:12px; margin-top:4px; }
+    .h-card .badge {
+      display:inline-block; font-size:10px; font-weight:600; padding:1px 6px; border-radius:3px;
+      background:#F4F4F5; color:var(--text-muted); margin-right:6px;
+    }
+    .h-card .badge[data-tone="ok"] { background:#ECFDF5; color:#027A48; }
+    .h-card form { margin-top:8px; }
+    .h-card button {
+      background:transparent; border:1px solid #5E6AD2; color:#5E6AD2;
+      padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:600; font-size:12px;
+    }
+    .h-card button:hover { background:#5E6AD2; color:#fff; }
+  </style>
+</head>
+<body class="doctor">
+  <div class="welcome-shell">
+    <h1 style="margin:0 0 4px; font-size:20px; letter-spacing:-0.01em;">병원을 선택해주세요</h1>
+    <p style="color:var(--text-muted); font-size:13px; margin:0 0 16px;">
+      의사 본인이 소속된 병원을 선택하면 같은 병원의 환자/직원이 연결됩니다.<br/>
+      목록에 없는 병원이라면 Clarix 관리자에게 등록을 요청해주세요.
+    </p>
+
+    <div class="tab-row">
+      <a th:href="@{/doctor/welcome(tab='partnered')}" th:classappend="${activeTab == 'partnered'} ? 'active'">연동 병원</a>
+      <a th:href="@{/doctor/welcome(tab='nearby')}"    th:classappend="${activeTab == 'nearby'} ? 'active'">미연동 병원</a>
+    </div>
+
+    <div th:if="${#lists.isEmpty(hospitals)}"
+         style="text-align:center; padding:24px; color:var(--text-muted); font-size:13px;">
+      표시할 병원이 없습니다.
+    </div>
+
+    <div th:each="h : ${hospitals}" class="h-card">
+      <div class="name" th:text="${h.name}"></div>
+      <div class="meta">
+        <span th:if="${h.partnered}" class="badge" data-tone="ok">연동</span>
+        <span th:unless="${h.partnered}" class="badge">미연동</span>
+        <span th:text="${h.specialty}"></span>
+        · <span th:text="${h.distanceKm}">0</span>km
+        · <span th:text="${h.address}"></span>
+      </div>
+      <form th:action="@{/doctor/welcome}" method="post">
+        <input type="hidden" name="hospitalId" th:value="${h.id}" />
+        <button type="submit">이 병원 선택</button>
+      </form>
+    </div>
+
+    <form th:action="@{/auth/logout}" method="post" style="margin-top:24px;">
+      <button class="btn btn-ghost" style="font-size:12px;">로그아웃</button>
+    </form>
+  </div>
+</body>
+</html>

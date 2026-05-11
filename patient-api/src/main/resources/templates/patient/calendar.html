@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Clarix · 무드 캘린더</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <link rel="stylesheet" th:href="@{/css/tokens.css}" />
+  <link rel="stylesheet" th:href="@{/css/patient.css}" />
+</head>
+<body class="patient clarix calendar-page">
+  <div class="patient-shell">
+    <h1 class="patient-headline">
+      <span th:text="${me.name}">사용자</span>님이 남긴 나만의 무드를<br/>
+      돌아보아요.
+    </h1>
+
+    <div class="cal-card">
+      <div class="cal-head">
+        <a th:href="@{/patient/calendar(ym=${prevMonth}, date=${selected})}">
+          <button type="button" aria-label="이전 달">‹</button>
+        </a>
+        <span class="label" th:text="${#temporals.format(viewMonth.atDay(1), 'MMMM')}">October</span>
+        <a th:href="@{/patient/calendar(ym=${nextMonth}, date=${selected})}">
+          <button type="button" aria-label="다음 달">›</button>
+        </a>
+      </div>
+
+      <div class="cal-grid">
+        <div class="cal-h"></div>
+        <div class="cal-h">Mo</div>
+        <div class="cal-h">Tu</div>
+        <div class="cal-h">We</div>
+        <div class="cal-h">Th</div>
+        <div class="cal-h">Fr</div>
+        <div class="cal-h sat">Sa</div>
+        <div class="cal-h sun">Su</div>
+
+        <th:block th:each="row, rs : ${weeks}">
+          <div class="cal-w" th:text="${weekNumbers[rs.index]}">w</div>
+          <th:block th:each="cell : ${row}">
+            <a class="cal-cell"
+               th:classappend="${(cell.inMonth ? '' : 'out ')
+                               + (cell.dow == 6 ? 'sat ' : '')
+                               + (cell.dow == 7 ? 'sun ' : '')
+                               + (cell.today ? 'today ' : '')
+                               + (cell.selected ? 'selected ' : '')
+                               + (cell.emotion != null ? 'has-mood' : '')}"
+               th:style="${cell.emotion == null ? '' : '--cell-grad: var(--grad-' + cell.emotion.slug() + ');'}"
+               th:href="@{/patient/calendar(ym=${viewMonth}, date=${cell.date})}"
+               th:text="${cell.day}">1</a>
+          </th:block>
+        </th:block>
+      </div>
+    </div>
+
+    <div class="cal-day-row">
+      <span class="date"
+            th:text="${#temporals.format(selected, 'yyyy년 M월 d일')} + '의 무드'">— 의 무드</span>
+      <form th:if="${selectedMood != null}" th:action="@{/patient/calendar/delete}" method="post">
+        <input type="hidden" name="date" th:value="${selected}" />
+        <button type="submit">삭제</button>
+      </form>
+    </div>
+
+    <div th:if="${selectedMood != null and selectedMood.emotion != null}" class="cal-day-mood">
+      <span class="bubble" th:text="${selectedMood.emotion.emoji()}">😢</span>
+      <div class="body" th:text="${selectedMood.journal != null and !#strings.isEmpty(selectedMood.journal)} ? ${selectedMood.journal} : '기록된 일기가 없어요'">—</div>
+    </div>
+
+    <div th:if="${selectedMood == null}"
+         style="margin-top:18px; color:rgba(255,255,255,0.65); text-align:center; font-size:13px;">
+      이 날엔 기록이 없어요
+    </div>
+
+    <!-- ============ Insights (merged) ============ -->
+    <div id="insights" style="margin-top: 36px;"></div>
+
+    <h2 style="font-size:14px; font-weight:700; color:var(--clarix-coral); margin: 0 4px 8px; letter-spacing: 0.02em;">
+      <span th:text="${me.name}">사용자</span>님의 무드 인사이트
+    </h2>
+
+    <!-- 주간 -->
+    <div class="insight-card">
+      <span class="insight-pill">주간</span>
+      <span class="insight-headline">
+        <th:block th:if="${topWeek != null}">
+          ‘<strong th:text="${topWeek.label()}">피곤</strong>’을 가장 많이 느끼셨어요
+        </th:block>
+        <th:block th:unless="${topWeek != null}">
+          이번 주 무드 기록이 아직 없어요
+        </th:block>
+      </span>
+      <div class="insight-strip" th:if="${topWeek != null}">
+        <span class="bubble-sm">😠</span>
+        <span class="spacer"></span>
+        <span class="bubble-sm" th:text="${topWeek.emoji()}">😪</span>
+      </div>
+    </div>
+
+    <!-- 월간 -->
+    <div class="insight-card">
+      <span class="insight-pill">월간</span>
+      <span class="insight-headline">
+        <th:block th:if="${topMonth != null}">
+          ‘<strong th:text="${topMonth.label()}">피곤</strong>’을 가장 많이 느끼셨어요
+        </th:block>
+        <th:block th:unless="${topMonth != null}">
+          이번 달 무드 기록이 아직 없어요
+        </th:block>
+      </span>
+      <div class="insight-strip" th:if="${topMonth != null}">
+        <span class="bubble-sm">😠</span>
+        <span class="spacer"></span>
+        <span class="bubble-sm" th:text="${topMonth.emoji()}">😪</span>
+      </div>
+    </div>
+
+    <!-- 요약 -->
+    <div class="insight-summary">
+      <th:block th:if="${topMonth != null}">
+        <th:block th:switch="${topMonth.name()}">
+          <span th:case="'JOY'">밝은 날이 많았네요. 그 마음 그대로 이어가봐요!</span>
+          <span th:case="'CALM'">평온한 한 달이었어요. 좋은 루틴이 자리잡고 있어요.</span>
+          <span th:case="'TIRED'">피곤함을 많이 느끼셨나봐요.<br/>달달한걸로 기분 업업!!</span>
+          <span th:case="'SAD'">슬픈 날이 많았어요. 가까운 사람과 짧게 이야기 나눠보는 건 어떨까요?</span>
+          <span th:case="'DOWN'">우울감이 자주 느껴졌어요. 진료 시 주치의에게 공유해보세요.</span>
+          <span th:case="'ANGRY'">짜증을 자주 느끼셨네요. 짧은 산책으로 환기해보면 어떨까요?</span>
+        </th:block>
+      </th:block>
+      <th:block th:unless="${topMonth != null}">
+        오늘 첫 무드를 기록해보세요. 한 달 동안의 패턴이 보이기 시작해요.
+      </th:block>
+    </div>
+
+    <div style="margin-top:14px; text-align:center; color:rgba(255,255,255,0.55); font-size:12px;">
+      최근 7일 <strong th:text="${weeklyCount}">0</strong>건 ·
+      최근 30일 <strong th:text="${monthlyCount}">0</strong>건
+    </div>
+  </div>
+
+  <nav class="clarix-tabbar">
+    <a th:href="@{/patient/}">
+      <span class="dot">🏠</span><span>홈</span>
+    </a>
+    <a th:href="@{/patient/calendar}" aria-current="page">
+      <span class="dot">📅</span><span>캘린더</span>
+    </a>
+    <a th:href="@{/patient/me}">
+      <span class="dot">👤</span><span>마이페이지</span>
+    </a>
+  </nav>
+</body>
+</html>

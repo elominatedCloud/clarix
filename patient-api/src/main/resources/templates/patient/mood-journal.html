@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Clarix · 오늘의 일기</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <link rel="stylesheet" th:href="@{/css/tokens.css}" />
+  <link rel="stylesheet" th:href="@{/css/patient.css}" />
+</head>
+<body class="patient clarix">
+  <div class="patient-shell">
+    <form th:action="@{/patient/mood}" method="get" style="display:inline">
+      <button type="submit" class="clarix-back" aria-label="뒤로">‹</button>
+    </form>
+
+    <h1 class="patient-headline">
+      <span th:text="${me.name}">사용자</span>님이 느낀 오늘의 감정을<br/>
+      한줄/두줄로 짧게 써주세요!
+    </h1>
+
+    <div class="journal-stage">
+      <span class="emotion-bubble" th:attr="data-mood=${emotion.slug()}" th:text="${emotion.emoji()}">😢</span>
+      <span class="emotion-label" th:text="${emotion.label()}">감정</span>
+    </div>
+
+    <form th:action="@{/patient/mood/preview}" method="post" id="journalForm">
+      <input type="hidden" name="emotion" th:value="${emotion.name()}" />
+      <textarea class="journal-input" name="journal" id="journalInput"
+                rows="2" maxlength="120"
+                placeholder="오늘의 한줄 일기를 적어주세요"
+                th:text="${journal}"></textarea>
+
+      <div class="clarix-cta-bar">
+        <button type="submit" class="btn-clarix btn-clarix-primary is-disabled" id="nextBtn" disabled>다음</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    (function () {
+      var ta  = document.getElementById('journalInput');
+      var btn = document.getElementById('nextBtn');
+      function refresh() {
+        var ok = ta.value.trim().length > 0;
+        btn.disabled = !ok;
+        btn.classList.toggle('is-disabled', !ok);
+      }
+      ta.addEventListener('input', refresh);
+      ta.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Enter' && !ev.shiftKey) {
+          ev.preventDefault();
+          if (ta.value.trim().length > 0) {
+            document.getElementById('journalForm').submit();
+          }
+        }
+      });
+      refresh();
+      ta.focus();
+    })();
+  </script>
+</body>
+</html>

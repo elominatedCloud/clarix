@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Clarix</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <link rel="stylesheet" th:href="@{/css/tokens.css}" />
+  <link rel="stylesheet" th:href="@{/css/patient.css}" />
+  <style>
+    body { background: #F2F2F7; }
+    .landing-shell { max-width: 480px; margin: 0 auto; padding: 96px 24px 24px; min-height: 100vh; display: flex; flex-direction: column; }
+    .landing-shell h1 { font-size: 40px; font-weight: 700; letter-spacing: -0.03em; margin: 0 0 8px; }
+    .landing-shell .tagline { color: var(--text-muted); margin: 0 0 48px; line-height: 1.5; }
+    .role-cards { display: grid; gap: 12px; }
+    .role-card { background: #fff; border-radius: 16px; padding: 20px; box-shadow: 0 0 0 1px rgba(0,0,0,.04), 0 2px 8px rgba(0,0,0,.04); transition: transform 200ms var(--easing); cursor: pointer; }
+    .role-card:active { transform: scale(0.98); }
+    .role-card .label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--cat-color); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+    .role-card .label::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--cat-color); }
+    .role-card .title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .role-card .desc { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+    .role-card.patient { --cat-color: #0A84FF; }
+    .role-card.doctor  { --cat-color: #5E6AD2; }
+    .landing-foot { margin-top: auto; padding-top: 24px; font-size: 12px; color: var(--text-tertiary); text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="landing-shell">
+    <h1>Clarix</h1>
+    <p class="tagline">Unified Cognition. Clarity on Demand.<br/>환자의 자가보고를 의사용 명확한 신호로.</p>
+    <div class="role-cards">
+      <a class="role-card patient" th:href="@{/auth/login(role='patient')}">
+        <div class="label">환자</div>
+        <div class="title">매일의 기록을 간단하게</div>
+        <div class="desc">복약 · 기분 · 부작용을 5초 안에 기록하고, 신뢰하는 의사와 공유하세요.</div>
+      </a>
+      <a class="role-card doctor" th:href="@{/auth/login(role='doctor')}">
+        <div class="label">의료진</div>
+        <div class="title">위험 환자를 먼저 보세요</div>
+        <div class="desc">짧은 진료 시간, 복약 순응도 · 기분 · PHQ-9 · SOAP가 한 화면에.</div>
+      </a>
+    </div>
+    <div class="landing-foot">v1 · Spring Boot 3.5 + Thymeleaf + JPA · H2 데모 모드</div>
+  </div>
+</body>
+</html>

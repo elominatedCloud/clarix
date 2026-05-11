@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Clarix · 복약</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <link rel="stylesheet" th:href="@{/css/tokens.css}" />
+  <link rel="stylesheet" th:href="@{/css/patient.css}" />
+</head>
+<body class="patient">
+  <div class="patient-shell">
+    <div class="patient-greeting"><a th:href="@{/patient/}" style="color: var(--text-muted)">← 오늘</a></div>
+    <h1 class="patient-headline">복약 체크</h1>
+
+    <div class="detail-header">
+      <div class="tile-label" style="--cat-color: #0A84FF">오늘 복용량</div>
+      <div class="stat">
+        <span th:text="${medTaken}">0</span> <span class="denom" th:text="' / ' + ${medTotal}"> / 0</span>
+      </div>
+      <div class="tile-meta" style="margin-top: 8px;"
+           th:text="${medTotal - medTaken &gt; 0} ? (${medTotal - medTaken} + '회 남음 — 슬롯을 탭해서 기록하세요') : '오늘 모두 완료했어요 ✓'">—</div>
+    </div>
+
+    <div class="section-title-uppercase">오늘 약 (탭하여 기록)</div>
+
+    <div th:if="${#lists.isEmpty(rx)}" class="empty">
+      등록된 약이 없습니다.<br/>
+      <a th:href="@{/patient/onboarding}" style="color:#0A84FF">+ 지금 등록하기</a>
+    </div>
+
+    <div th:each="p : ${rx}" class="entry-row" style="background:#fff; padding:16px; border-radius:12px; margin-bottom:8px; border:none; grid-template-columns:1fr auto auto auto;">
+      <div class="name" th:text="${p.medicationName}"></div>
+
+      <th:block th:each="slot : ${ {'morning','noon','evening'} }">
+        <th:block th:if="${p.scheduleSlots().contains(slot)}">
+          <form th:action="@{/patient/medication/toggle}" method="post" style="display:inline">
+            <input type="hidden" name="medicationName" th:value="${p.medicationName}" />
+            <input type="hidden" name="slot" th:value="${slot}" />
+            <input type="hidden" name="status"
+                   th:value="${statusIdx[p.medicationName + '|' + slot] != null and statusIdx[p.medicationName + '|' + slot].name() == 'TAKEN'} ? 'MISSED' : 'TAKEN'" />
+            <button type="submit" class="slot"
+                    th:attr="data-state=${statusIdx[p.medicationName + '|' + slot] != null ? statusIdx[p.medicationName + '|' + slot].name().toLowerCase() : null}"
+                    th:text="${slot == 'morning'} ? '아침' : (${slot == 'noon'} ? '점심' : '저녁')">아침</button>
+          </form>
+        </th:block>
+        <th:block th:unless="${p.scheduleSlots().contains(slot)}">
+          <div style="width:44px"></div>
+        </th:block>
+      </th:block>
+    </div>
+
+    <div style="margin-top: 24px;">
+      <a th:href="@{/patient/onboarding}" class="btn btn-ghost">+ 약 등록 / 수정</a>
+    </div>
+  </div>
+</body>
+</html>
