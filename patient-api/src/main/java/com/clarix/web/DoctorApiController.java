@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.clarix.domain.Role;
 import com.clarix.domain.User;
@@ -60,10 +62,20 @@ public class DoctorApiController {
 
     /** LLM SOAP autofill — 자유 텍스트 + 환자 컨텍스트 -> JSON {S, O, A, P}. */
     @PostMapping("/patient/{id}/llm-soap")
-    public GeminiSoapService.Soap llmSoap(@PathVariable UUID id,
-                                          @RequestParam(name = "freeText", required = false) String freeText,
-                                          HttpSession session) {
+    public ResponseEntity<?> llmSoap(@PathVariable UUID id,
+                                     @RequestParam(name = "freeText", required = false) String freeText,
+                                     HttpSession session) {
         current.requireRole(session, Role.DOCTOR);
-        return geminiSvc.autofill(id, freeText);
+        try {
+            return ResponseEntity.ok(geminiSvc.autofill(id, freeText));
+        } catch (ResponseStatusException ex) {
+            if (ex.getStatusCode().value() == 503) {
+                return ResponseEntity.status(503).body(Map.of(
+                    "error", "AI_CONFIG_MISSING",
+                    "message", ex.getReason() == null ? "AI API key is not configured" : ex.getReason()
+                ));
+            }
+            throw ex;
+        }
     }
 }
