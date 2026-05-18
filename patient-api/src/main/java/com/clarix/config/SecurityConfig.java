@@ -34,7 +34,7 @@ public class SecurityConfig {
                                            UserRepository users) throws Exception {
         http
             .authorizeHttpRequests(a -> a
-                .requestMatchers("/", "/auth/**", "/css/**", "/js/**", "/img/**").permitAll()
+                .requestMatchers("/", "/health", "/auth/**", "/css/**", "/js/**", "/img/**").permitAll()
                 .requestMatchers("/patient/**").hasAuthority(Role.PATIENT.name())
                 .requestMatchers("/doctor/**").hasAuthority(Role.DOCTOR.name())
                 .requestMatchers("/reception/**").hasAuthority(Role.RECEPTIONIST.name())
