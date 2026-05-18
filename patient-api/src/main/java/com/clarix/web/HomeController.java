@@ -7,9 +7,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.clarix.dto.SignupForm;
 import com.clarix.domain.Role;
 import com.clarix.domain.User;
 import com.clarix.service.AuthService;
@@ -33,7 +35,13 @@ public class HomeController {
     public String landing(HttpSession session) {
         if (current.isLoggedIn(session)) {
             User u = current.require(session);
-            return u.getRole() == Role.DOCTOR ? "redirect:/doctor/" : "redirect:/patient/";
+            return switch (u.getRole()) {
+                case DOCTOR -> "redirect:/doctor/";
+                case PATIENT -> "redirect:/patient/";
+                case RECEPTIONIST -> "redirect:/reception/";
+                case NURSE, TECHNICIAN -> "redirect:/staff/";
+                case ADMIN -> "redirect:/admin/";
+            };
         }
         return "landing";
     }
@@ -58,24 +66,30 @@ public class HomeController {
     }
 
     @PostMapping("/auth/signup")
-    public String signup(@RequestParam String email, @RequestParam String password,
-                         @RequestParam String name, @RequestParam String role,
+    public String signup(@ModelAttribute SignupForm form,
                          HttpServletRequest request, Model model) {
         try {
-            Role r = "doctor".equalsIgnoreCase(role) ? Role.DOCTOR : Role.PATIENT;
-            User u = auth.signup(email, password, name, r);
+            Role r = "doctor".equalsIgnoreCase(form.getRole()) ? Role.DOCTOR : Role.PATIENT;
+            User u = auth.signup(form.getEmail(), form.getPassword(), form.getName(), r);
             // 가입 직후 자동 로그인 (Spring Security context에 직접 주입)
+            Role savedRole = u.getRole();
             Authentication authentication = new UsernamePasswordAuthenticationToken(
-                u.getEmail(), null, java.util.List.of(new SimpleGrantedAuthority(r.name())));
+                u.getEmail(), null, java.util.List.of(new SimpleGrantedAuthority(savedRole.name())));
             SecurityContextHolder.getContext().setAuthentication(authentication);
             request.getSession(true).setAttribute(
                 "SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
-            return r == Role.DOCTOR ? "redirect:/doctor/" : "redirect:/patient/welcome";
+            return switch (savedRole) {
+                case DOCTOR -> "redirect:/doctor/";
+                case PATIENT -> "redirect:/patient/welcome";
+                case RECEPTIONIST -> "redirect:/reception/";
+                case NURSE, TECHNICIAN -> "redirect:/staff/";
+                case ADMIN -> "redirect:/admin/";
+            };
         } catch (org.springframework.web.server.ResponseStatusException e) {
             model.addAttribute("error", e.getReason());
-            model.addAttribute("role", role);
-            model.addAttribute("name", name);
-            model.addAttribute("email", email);
+            model.addAttribute("role", form.getRole());
+            model.addAttribute("name", form.getName());
+            model.addAttribute("email", form.getEmail());
             return "auth/signup";
         }
     }

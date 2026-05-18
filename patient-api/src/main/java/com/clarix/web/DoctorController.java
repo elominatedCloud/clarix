@@ -11,7 +11,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.clarix.dto.MemoForm;
 import com.clarix.dto.PrescriptionForm;
+import com.clarix.dto.SoapNoteForm;
+import com.clarix.dto.HospitalPickForm;
+import com.clarix.dto.StaffInviteForm;
 import com.clarix.domain.Role;
 import com.clarix.domain.User;
 import com.clarix.repo.UserRepository;
@@ -131,13 +135,11 @@ public class DoctorController {
 
     @PostMapping("/patient/{id}/soap")
     public String addSoap(@PathVariable UUID id,
-                          @RequestParam(required = false) String subjective,
-                          @RequestParam(required = false) String objective,
-                          @RequestParam(required = false) String assessment,
-                          @RequestParam(required = false) String plan,
+                          @ModelAttribute SoapNoteForm form,
                           HttpSession session) {
         User me = current.requireRole(session, Role.DOCTOR);
-        doctorSvc.createSoap(me, id, subjective, objective, assessment, plan);
+        doctorSvc.createSoap(me, id, form.getSubjective(), form.getObjective(),
+            form.getAssessment(), form.getPlan());
         return "redirect:/doctor/patient/" + id;
     }
 
@@ -157,10 +159,10 @@ public class DoctorController {
 
     @PostMapping("/patient/{id}/memo")
     public String updateDoctorMemo(@PathVariable UUID id,
-                                   @RequestParam(required = false) String memo,
+                                   @ModelAttribute MemoForm form,
                                    HttpSession session) {
         User me = current.requireRole(session, Role.DOCTOR);
-        doctorSvc.updateDoctorMemo(me, id, memo);
+        doctorSvc.updateDoctorMemo(me, id, form.getMemo());
         return "redirect:/doctor/patient/" + id;
     }
 
@@ -199,13 +201,11 @@ public class DoctorController {
 
     @PostMapping("/note/{id}/edit")
     public String saveNoteEdit(@PathVariable UUID id,
-                               @RequestParam(required = false) String subjective,
-                               @RequestParam(required = false) String objective,
-                               @RequestParam(required = false) String assessment,
-                               @RequestParam(required = false) String plan,
+                               @ModelAttribute SoapNoteForm form,
                                HttpSession session) {
         User me = current.requireRole(session, Role.DOCTOR);
-        var n = noteSvc.update(me, id, subjective, objective, assessment, plan);
+        var n = noteSvc.update(me, id, form.getSubjective(), form.getObjective(),
+            form.getAssessment(), form.getPlan());
         return "redirect:/doctor/patient/" + n.getPatient().getId();
     }
 
@@ -226,9 +226,9 @@ public class DoctorController {
     }
 
     @PostMapping("/welcome")
-    public String pickHospital(@RequestParam UUID hospitalId, HttpSession session) {
+    public String pickHospital(@ModelAttribute HospitalPickForm form, HttpSession session) {
         User me = current.requireRole(session, Role.DOCTOR);
-        doctorSvc.assignHospital(me, hospitalId);
+        doctorSvc.assignHospital(me, form.getHospitalId());
         return "redirect:/doctor/";
     }
 
@@ -244,12 +244,11 @@ public class DoctorController {
     }
 
     @PostMapping("/admin/invite")
-    public String createInvite(@RequestParam String email,
-                               @RequestParam String role,
+    public String createInvite(@ModelAttribute StaffInviteForm form,
                                HttpSession session, Model model) {
         User me = current.requireRole(session, Role.DOCTOR);
         try {
-            doctorSvc.createInvite(me, email, Role.valueOf(role));
+            doctorSvc.createInvite(me, form.getEmail(), Role.valueOf(form.getRole()));
         } catch (org.springframework.web.server.ResponseStatusException ex) {
             // surfaced via flash if needed; for now just redirect
         }

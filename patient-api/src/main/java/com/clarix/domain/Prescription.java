@@ -13,7 +13,7 @@ import lombok.Setter;
 /**
  * 처방. 매일 복약 토글이 이 목록을 순회.
  * schedule는 "morning,noon,evening" 부분집합을 쉼표 구분 문자열로 저장.
- * (TEXT[]는 H2/Postgres 호환이 까다로워 String + 헬퍼로 단순화)
+ * MySQL VARCHAR 컬럼에 String으로 저장하고 헬퍼에서 List로 변환한다.
  */
 @Getter
 @Setter

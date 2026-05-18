@@ -6,7 +6,6 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -14,11 +13,21 @@ import java.util.UUID;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.clarix.dto.AssessmentForm;
+import com.clarix.dto.DosageFeedbackForm;
+import com.clarix.dto.ExerciseLogForm;
+import com.clarix.dto.HospitalPickForm;
+import com.clarix.dto.MealLogForm;
+import com.clarix.dto.MedicationSetupForm;
+import com.clarix.dto.MedicationToggleForm;
+import com.clarix.dto.MoodEntryForm;
+import com.clarix.dto.ShareGrantForm;
 import com.clarix.domain.Emotion;
 import com.clarix.domain.MedStatus;
 import com.clarix.domain.Prescription;
@@ -369,9 +378,9 @@ public class PatientController {
     }
 
     @PostMapping("/welcome")
-    public String pickHospital(@RequestParam UUID hospitalId, HttpSession session) {
+    public String pickHospital(@ModelAttribute HospitalPickForm form, HttpSession session) {
         User me = current.requireRole(session, Role.PATIENT);
-        patientSvc.setHospital(me, hospitalId);
+        patientSvc.setHospital(me, form.getHospitalId());
         return "redirect:/patient/assessment?onboarding=1";
     }
 
@@ -394,19 +403,18 @@ public class PatientController {
     }
 
     @PostMapping("/assessment")
-    public String submitAssessment(@RequestParam Map<String, String> form, HttpSession session) {
+    public String submitAssessment(@ModelAttribute AssessmentForm form, HttpSession session) {
         User me = current.requireRole(session, Role.PATIENT);
-        Map<String, Integer> answers = new HashMap<>();
-        for (int i = 1; i <= 9; i++) {
-            String v = form.get("q" + i);
-            if (v == null) throw new org.springframework.web.server.ResponseStatusException(
-                org.springframework.http.HttpStatus.BAD_REQUEST, "missing q" + i);
-            answers.put("q" + i, Integer.parseInt(v));
+        Map<String, Integer> answers;
+        try {
+            answers = form.toAnswers();
+        } catch (IllegalArgumentException e) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.BAD_REQUEST, e.getMessage());
         }
         assessmentSvc.submit(me, answers);
-        boolean isOnboarding = "1".equals(form.get("onboarding"));
-        return isOnboarding ? "redirect:/patient/onboarding?onboarding=1"
-                            : "redirect:/patient/assessment/result";
+        return form.isOnboardingFlow() ? "redirect:/patient/onboarding?onboarding=1"
+                                       : "redirect:/patient/assessment/result";
     }
 
     @GetMapping("/assessment/result")
@@ -433,22 +441,10 @@ public class PatientController {
     }
 
     @PostMapping("/onboarding")
-    public String addPrescriptions(jakarta.servlet.http.HttpServletRequest req, HttpSession session) {
+    public String addPrescriptions(@ModelAttribute MedicationSetupForm form, HttpSession session) {
         User me = current.requireRole(session, Role.PATIENT);
-        // 폼은 최대 5줄: name{i} + slots{i} + days{i} + storage{i}
-        for (int i = 1; i <= 5; i++) {
-            String name = req.getParameter("name" + i);
-            String[] slots = req.getParameterValues("slots" + i);
-            String daysStr = req.getParameter("days" + i);
-            String storage = req.getParameter("storage" + i);
-            if (name == null || name.isBlank() || slots == null || slots.length == 0) continue;
-            int daysSupply = 30;
-            if (daysStr != null && !daysStr.isBlank()) {
-                try { daysSupply = Math.max(1, Integer.parseInt(daysStr.trim())); }
-                catch (NumberFormatException ignore) {}
-            }
-            patientSvc.addPrescription(me, name.trim(),
-                java.util.Arrays.asList(slots), daysSupply, storage);
+        for (MedicationSetupForm.Row row : form.rows()) {
+            patientSvc.addPrescription(me, row.name(), row.slots(), row.daysSupply(), row.storage());
         }
         return "redirect:/patient/";
     }
@@ -496,12 +492,11 @@ public class PatientController {
 
     @PostMapping("/medication/toggle")
     @SuppressWarnings("unchecked")
-    public String toggleMedication(@RequestParam String medicationName, @RequestParam String slot,
-                                   @RequestParam String status,
-                                   @RequestParam(defaultValue = "/patient/") String returnTo,
+    public String toggleMedication(@ModelAttribute MedicationToggleForm form,
                                    HttpSession session) {
         User me = current.requireRole(session, Role.PATIENT);
-        var log = patientSvc.logMedication(me, medicationName, slot, MedStatus.valueOf(status.toUpperCase()));
+        var log = patientSvc.logMedication(me, form.getMedicationName(), form.getSlot(),
+            MedStatus.valueOf(form.getStatus().toUpperCase()));
         // 봉투를 직접 찢은 케이스만 피드백 단계 노출 — session에 logId 등록
         if (log.getStatus() == MedStatus.TAKEN) {
             var pending = (java.util.Set<UUID>) session.getAttribute("pendingFeedbackLogs");
@@ -511,39 +506,37 @@ public class PatientController {
             }
             pending.add(log.getId());
         }
-        return "redirect:" + (returnTo.startsWith("/") ? returnTo : "/patient/");
+        String returnTo = form.getReturnTo();
+        return "redirect:" + (returnTo != null && returnTo.startsWith("/") ? returnTo : "/patient/");
     }
 
     @PostMapping("/medication/feedback")
     @SuppressWarnings("unchecked")
-    public String recordFeedback(@RequestParam UUID logId,
-                                 @RequestParam String feedback,
+    public String recordFeedback(@ModelAttribute DosageFeedbackForm form,
                                  HttpSession session) {
         User me = current.requireRole(session, Role.PATIENT);
         try {
-            patientSvc.recordDosageFeedback(me.getId(), logId,
-                com.clarix.domain.DosageFeedback.valueOf(feedback));
+            patientSvc.recordDosageFeedback(me.getId(), form.getLogId(),
+                com.clarix.domain.DosageFeedback.valueOf(form.getFeedback()));
         } catch (IllegalArgumentException ignore) {}
         var pending = (java.util.Set<UUID>) session.getAttribute("pendingFeedbackLogs");
-        if (pending != null) pending.remove(logId);
+        if (pending != null) pending.remove(form.getLogId());
         return "redirect:/patient/";
     }
 
     /** 어제 못 챙긴 약을 늦게 기록 — 어제 시각으로 TAKEN 로그. */
     @PostMapping("/medication/log-yesterday")
-    public String logYesterday(@RequestParam String medicationName,
-                               @RequestParam String slot,
+    public String logYesterday(@ModelAttribute MedicationToggleForm form,
                                HttpSession session) {
         User me = current.requireRole(session, Role.PATIENT);
-        patientSvc.logMedicationOn(me, medicationName, slot,
+        patientSvc.logMedicationOn(me, form.getMedicationName(), form.getSlot(),
             MedStatus.TAKEN, LocalDate.now().minusDays(1));
         return "redirect:/patient/";
     }
 
     @PostMapping("/medication/skip-yesterday")
     @SuppressWarnings("unchecked")
-    public String skipYesterdayMed(@RequestParam String medicationName,
-                                   @RequestParam String slot,
+    public String skipYesterdayMed(@ModelAttribute MedicationToggleForm form,
                                    HttpSession session) {
         current.requireRole(session, Role.PATIENT);
         var skipped = (java.util.Set<String>) session.getAttribute("skippedYesterdayMeds");
@@ -551,7 +544,7 @@ public class PatientController {
             skipped = new java.util.HashSet<>();
             session.setAttribute("skippedYesterdayMeds", skipped);
         }
-        skipped.add(medicationName + "|" + slot);
+        skipped.add(form.getMedicationName() + "|" + form.getSlot());
         return "redirect:/patient/";
     }
 
@@ -622,14 +615,13 @@ public class PatientController {
     }
 
     @PostMapping("/mood/journal")
-    public String moodJournal(@RequestParam String emotion,
-                              @RequestParam(required = false) String journal,
+    public String moodJournal(@ModelAttribute MoodEntryForm form,
                               HttpSession session, Model model) {
         User me = current.requireRole(session, Role.PATIENT);
-        Emotion e = Emotion.valueOf(emotion);
+        Emotion e = Emotion.valueOf(form.getEmotion());
         String prefill;
-        if (journal != null) {
-            prefill = journal;
+        if (form.getJournal() != null) {
+            prefill = form.getJournal();
         } else {
             var existing = patientSvc.todayMood(me.getId()).orElse(null);
             prefill = existing != null && existing.getJournal() != null ? existing.getJournal() : "";
@@ -641,12 +633,11 @@ public class PatientController {
     }
 
     @PostMapping("/mood/preview")
-    public String moodPreview(@RequestParam String emotion,
-                              @RequestParam(required = false) String journal,
+    public String moodPreview(@ModelAttribute MoodEntryForm form,
                               HttpSession session, Model model) {
         User me = current.requireRole(session, Role.PATIENT);
-        Emotion e = Emotion.valueOf(emotion);
-        String text = journal == null ? "" : journal.trim();
+        Emotion e = Emotion.valueOf(form.getEmotion());
+        String text = form.getJournal() == null ? "" : form.getJournal().trim();
         if (text.isEmpty()) {
             model.addAttribute("me", me);
             model.addAttribute("emotion", e);
@@ -660,36 +651,32 @@ public class PatientController {
     }
 
     @PostMapping("/mood/save")
-    public String moodSave(@RequestParam String emotion,
-                           @RequestParam String journal,
+    public String moodSave(@ModelAttribute MoodEntryForm form,
                            HttpSession session) {
         User me = current.requireRole(session, Role.PATIENT);
-        Emotion e = Emotion.valueOf(emotion);
-        patientSvc.upsertEmotion(me, e, journal.trim());
+        Emotion e = Emotion.valueOf(form.getEmotion());
+        patientSvc.upsertEmotion(me, e, form.getJournal().trim());
         return "redirect:/patient/";
     }
 
     /* ---- Meal / Exercise quick-log ---- */
 
     @PostMapping("/meal")
-    public String logMeal(@RequestParam String kind,
-                          @RequestParam(required = false) String note,
+    public String logMeal(@ModelAttribute MealLogForm form,
                           HttpSession session) {
         User me = current.requireRole(session, Role.PATIENT);
         try {
-            patientSvc.logMeal(me, com.clarix.domain.MealKind.valueOf(kind), note);
+            patientSvc.logMeal(me, com.clarix.domain.MealKind.valueOf(form.getKind()), form.getNote());
         } catch (IllegalArgumentException ignore) {}
         return "redirect:/patient/";
     }
 
     @PostMapping("/exercise")
-    public String logExercise(@RequestParam String kind,
-                              @RequestParam(defaultValue = "0") int durationMin,
-                              @RequestParam(required = false) String note,
+    public String logExercise(@ModelAttribute ExerciseLogForm form,
                               HttpSession session) {
         User me = current.requireRole(session, Role.PATIENT);
-        if (kind == null || kind.isBlank()) return "redirect:/patient/";
-        patientSvc.logExercise(me, kind, durationMin, note);
+        if (form.getKind() == null || form.getKind().isBlank()) return "redirect:/patient/";
+        patientSvc.logExercise(me, form.getKind(), form.getDurationMin(), form.getNote());
         return "redirect:/patient/";
     }
 
@@ -715,10 +702,10 @@ public class PatientController {
     }
 
     @PostMapping("/sharing/grant")
-    public String grant(@RequestParam UUID doctorId, HttpSession session, Model model) {
+    public String grant(@ModelAttribute ShareGrantForm form, HttpSession session, Model model) {
         User me = current.requireRole(session, Role.PATIENT);
         try {
-            doctorSvc.grant(me, doctorId);
+            doctorSvc.grant(me, form.getDoctorId());
         } catch (Exception e) {
             model.addAttribute("error", "권한 부여 실패: " + e.getMessage());
         }

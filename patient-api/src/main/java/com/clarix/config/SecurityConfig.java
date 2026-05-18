@@ -2,14 +2,11 @@ package com.clarix.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import com.clarix.domain.Role;
 import com.clarix.domain.User;
@@ -37,7 +34,7 @@ public class SecurityConfig {
                                            UserRepository users) throws Exception {
         http
             .authorizeHttpRequests(a -> a
-                .requestMatchers("/", "/auth/**", "/css/**", "/js/**", "/h2-console/**").permitAll()
+                .requestMatchers("/", "/auth/**", "/css/**", "/js/**", "/img/**").permitAll()
                 .requestMatchers("/patient/**").hasAuthority(Role.PATIENT.name())
                 .requestMatchers("/doctor/**").hasAuthority(Role.DOCTOR.name())
                 .requestMatchers("/reception/**").hasAuthority(Role.RECEPTIONIST.name())
@@ -56,20 +53,16 @@ public class SecurityConfig {
                 .permitAll()
             )
             .logout(l -> l
-                .logoutRequestMatcher(new AntPathRequestMatcher("/auth/logout", "POST"))
+                .logoutUrl("/auth/logout")
                 .logoutSuccessUrl("/")
                 .invalidateHttpSession(true)
                 .deleteCookies("JSESSIONID")
                 .permitAll()
             )
-            // H2 콘솔이 iframe에 들어가야 작동 — 같은 출처만 허용
-            .headers(h -> h.frameOptions(f -> f.sameOrigin()))
-            // H2 콘솔은 자체 토큰 흐름이 없어서 CSRF 면제.
             // LLM autofill은 fetch 기반이라 CSRF 토큰을 form으로 못 받아서 면제 (인증은 그대로).
             .csrf(c -> c.ignoringRequestMatchers(
-                new AntPathRequestMatcher("/h2-console/**"),
-                new AntPathRequestMatcher("/doctor/patient/*/llm-soap", "POST"),
-                new AntPathRequestMatcher("/doctor/drug-check", "POST")
+                "/doctor/patient/*/llm-soap",
+                "/doctor/drug-check"
             ));
 
         return http.build();

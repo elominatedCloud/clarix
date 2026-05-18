@@ -5,11 +5,14 @@ import java.util.UUID;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.clarix.dto.AdminUserForm;
+import com.clarix.dto.HospitalForm;
 import com.clarix.domain.Role;
 import com.clarix.domain.User;
 import com.clarix.service.AdminService;
@@ -49,13 +52,10 @@ public class AdminController {
     }
 
     @PostMapping("/hospital")
-    public String createHospital(@RequestParam String name,
-                                 @RequestParam String address,
-                                 @RequestParam String specialty,
-                                 @RequestParam(defaultValue = "true") boolean partnered,
+    public String createHospital(@ModelAttribute HospitalForm form,
                                  HttpSession session) {
         current.requireRole(session, Role.ADMIN);
-        adminSvc.createHospital(name, address, specialty, partnered);
+        adminSvc.createHospital(form.getName(), form.getAddress(), form.getSpecialty(), form.isPartnered());
         return "redirect:/admin/";
     }
 
@@ -80,12 +80,12 @@ public class AdminController {
 
     @PostMapping("/users/{id}")
     public String updateUser(@PathVariable UUID id,
-                             @RequestParam String role,
-                             @RequestParam(required = false) String hospitalId,
+                             @ModelAttribute AdminUserForm form,
                              HttpSession session) {
         current.requireRole(session, Role.ADMIN);
-        UUID hid = (hospitalId == null || hospitalId.isBlank()) ? null : UUID.fromString(hospitalId);
-        adminSvc.updateUser(id, Role.valueOf(role), hid);
+        UUID hid = (form.getHospitalId() == null || form.getHospitalId().isBlank())
+            ? null : UUID.fromString(form.getHospitalId());
+        adminSvc.updateUser(id, Role.valueOf(form.getRole()), hid);
         return "redirect:/admin/users";
     }
 }

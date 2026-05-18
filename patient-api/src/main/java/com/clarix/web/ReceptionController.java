@@ -5,11 +5,13 @@ import java.util.UUID;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.clarix.dto.MemoForm;
 import com.clarix.domain.Role;
 import com.clarix.domain.User;
 import com.clarix.service.CurrentUser;
@@ -43,11 +45,11 @@ public class ReceptionController {
 
     @PostMapping("/patient/{id}/memo")
     public String updateMemo(@PathVariable UUID id,
-                             @RequestParam(required = false) String memo,
+                             @ModelAttribute MemoForm form,
                              HttpSession session) {
         User me = current.requireRole(session, Role.RECEPTIONIST);
         if (me.getHospital() == null) return "redirect:/reception/";
-        receptionSvc.updateMemo(me.getHospital().getId(), id, memo);
+        receptionSvc.updateMemo(me.getHospital().getId(), id, form.getMemo());
         return "redirect:/reception/";
     }
 

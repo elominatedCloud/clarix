@@ -1,5 +1,6 @@
 package com.clarix.config;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -10,7 +11,6 @@ import java.util.Map;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.clarix.domain.Assessment;
@@ -42,10 +42,8 @@ import com.clarix.service.JsonStore;
 import com.clarix.service.PasswordHasher;
 
 /**
- * 첫 부팅 시 데모 데이터 자동 시드.
- *
- *   - H2 in-memory에서는 ddl-auto=create-drop이라 매번 부팅 시 깨끗 → 매번 시드.
- *   - Supabase profile에서는 사용자 데이터 보존을 위해 비활성.
+ * 첫 부팅 시 MySQL 데모 데이터 자동 시드.
+ * users 테이블에 데이터가 있으면 기존 사용자 데이터를 보존하기 위해 skip.
  *
  * 가입 계정:
  *   doctor:   dr.kim@clarix.demo  / clarix1234
@@ -55,7 +53,6 @@ import com.clarix.service.PasswordHasher;
  *   patient4: patient4@clarix.demo / clarix1234   (오늘 약 미복용 — 봉투 strip 테스트)
  */
 @Configuration
-@Profile("!supabase")
 public class DemoDataInitializer {
 
     @Bean
@@ -96,7 +93,9 @@ public class DemoDataInitializer {
         void run(String... args) {
             if (users.count() > 0) return; // 이미 데이터 있으면 skip
             List<Hospital> hl = hospitals.findAll();
-            if (hl.isEmpty()) return; // data.sql 시드 미적용 — 이상 상황
+            if (hl.isEmpty()) {
+                hl = seedHospitals();
+            }
 
             String pw = hasher.hash("clarix1234");
             Hospital hospital = hl.get(0);
@@ -145,6 +144,30 @@ public class DemoDataInitializer {
             notes.save(makeSoap(doctor, p1, "컨디션 안정", "복약 90%, 기분 4.0", "치료 반응 양호", "현 처방 유지"));
             notes.save(makeSoap(doctor, p2, "효과 변동성 호소", "복약 60%, 기분 2~4", "용량 조정 검토", "아빌리파이 7.5mg로 증량"));
             notes.save(makeSoap(doctor, p3, "복약 거부 빈번, 우울감 심함", "복약 30%, 기분 1~2, PHQ-9 21", "심각한 우울 — 약물 변경 필요", "리스페달 중단 검토, sertraline 50mg 시작"));
+        }
+
+        private List<Hospital> seedHospitals() {
+            return List.of(
+                saveHospital("마음정신건강의학과의원", "서울 강남구 테헤란로 152", "정신건강의학과", true, "1.2"),
+                saveHospital("서울대학교병원 정신건강의학과", "서울 종로구 대학로 101", "정신건강의학과", true, "3.4"),
+                saveHospital("연세아이정신건강의학과", "서울 서대문구 신촌로 134", "정신건강의학과", true, "4.1"),
+                saveHospital("성북마음클리닉", "서울 성북구 동소문로 89", "정신건강의학과", true, "5.8"),
+                saveHospital("판교웰니스의원", "경기 성남시 분당구 판교역로 235", "내과·정신건강의학과", true, "12.5"),
+                saveHospital("하늘마음의원", "서울 마포구 양화로 188", "정신건강의학과", false, "2.7"),
+                saveHospital("새벽병원 정신건강센터", "서울 영등포구 여의대로 24", "정신건강의학과", false, "6.9"),
+                saveHospital("편안한 정신건강의원", "서울 송파구 올림픽로 240", "정신건강의학과", false, "8.3")
+            );
+        }
+
+        private Hospital saveHospital(String name, String address, String specialty,
+                                      boolean partnered, String distanceKm) {
+            Hospital h = new Hospital();
+            h.setName(name);
+            h.setAddress(address);
+            h.setSpecialty(specialty);
+            h.setPartnered(partnered);
+            h.setDistanceKm(new BigDecimal(distanceKm));
+            return hospitals.save(h);
         }
 
         /**

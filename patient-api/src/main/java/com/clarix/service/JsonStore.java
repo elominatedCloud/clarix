@@ -8,7 +8,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Map ↔ JSON 문자열 변환 헬퍼. JSONB 컬럼 대신 TEXT에 직렬화 저장 (H2/Postgres 공통).
+ * Map ↔ JSON 문자열 변환 헬퍼. MySQL TEXT 컬럼에 직렬화 저장한다.
  */
 @Component
 public class JsonStore {

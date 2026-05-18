@@ -32,7 +32,7 @@ public class SymptomLog {
     @Column(name = "emotion", length = 16)
     private Emotion emotion;
 
-    /** 부작용 체크리스트를 JSON 문자열로 저장 (H2/Postgres 공통). 예: {"두통":true,"불면":true} */
+    /** 부작용 체크리스트를 JSON 문자열로 저장. 예: {"두통":true,"불면":true} */
     @Column(columnDefinition = "TEXT")
     private String symptoms;
 
