@@ -1767,15 +1767,7 @@ body.doctor.doctor-reference .doctor-shell {
 
 body.doctor.doctor-reference .doctor-main {
   min-height: 100vh;
-  background:
-    linear-gradient(90deg, transparent 0, transparent 112px, rgba(10,18,28,0.035) 112px, rgba(10,18,28,0.035) 128px);
-  background-size: 144px 100%;
-}
-
-html[data-theme="dark"] body.doctor.doctor-reference .doctor-main {
-  background:
-    linear-gradient(90deg, transparent 0, transparent 112px, rgba(9,15,24,0.58) 112px, rgba(9,15,24,0.58) 128px);
-  background-size: 144px 100%;
+  background: var(--doctor-bg);
 }
 
 body.doctor.doctor-reference .sidebar {
