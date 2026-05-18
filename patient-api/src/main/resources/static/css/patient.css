@@ -361,6 +361,105 @@ body.clarix .patient-headline { color: var(--clarix-navy); font-size: 22px; line
   border-color: var(--clarix-coral);
 }
 
+/* Mood recording uses the login background + deep navy for a calmer patient flow. */
+body.clarix.mood-flow {
+  background: var(--clarix-bg);
+}
+body.clarix.mood-flow .patient-headline,
+.mood-step .step-q {
+  color: var(--clarix-navy);
+}
+body.clarix.mood-flow .clarix-back {
+  background: var(--clarix-navy);
+  box-shadow: 0 3px 10px rgba(4, 19, 48, 0.18);
+}
+body.clarix.mood-flow .emotion-grid,
+.mood-step .emotion-grid {
+  gap: 18px 14px;
+}
+body.clarix.mood-flow .emotion-cell,
+.mood-step .emotion-cell {
+  width: 100%;
+  min-height: 134px;
+  justify-content: center;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.30);
+  border: 1px solid rgba(4, 19, 48, 0.07);
+  transition: background 140ms var(--easing), border-color 140ms var(--easing),
+    box-shadow 140ms var(--easing), transform 140ms var(--easing);
+}
+body.clarix.mood-flow .emotion-cell:has(input:checked),
+.mood-step .emotion-cell:has(input:checked) {
+  background: rgba(255, 255, 255, 0.55);
+  border-color: rgba(4, 19, 48, 0.28);
+  box-shadow: 0 10px 24px rgba(4, 19, 48, 0.10);
+  transform: translateY(-1px);
+}
+body.clarix.mood-flow .emotion-bubble,
+.mood-step .emotion-bubble {
+  width: 78px;
+  height: 78px;
+  font-size: 48px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.42);
+}
+body.clarix.mood-flow .journal-stage .emotion-bubble {
+  width: 112px;
+  height: 112px;
+  font-size: 72px;
+  background: rgba(255, 255, 255, 0.36);
+}
+body.clarix.mood-flow .emotion-cell input:checked + .emotion-bubble,
+.mood-step .emotion-cell input:checked + .emotion-bubble {
+  transform: scale(1.04);
+}
+body.clarix.mood-flow .emotion-label,
+.mood-step .emotion-label {
+  background: rgba(255, 255, 255, 0.62);
+  border-color: rgba(4, 19, 48, 0.10);
+  color: var(--clarix-navy);
+  font-weight: 700;
+}
+body.clarix.mood-flow .emotion-cell input:checked ~ .emotion-label,
+.mood-step .emotion-cell input:checked ~ .emotion-label {
+  background: var(--clarix-navy);
+  border-color: var(--clarix-navy);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(4, 19, 48, 0.18);
+}
+body.clarix.mood-flow .journal-input {
+  border-bottom-color: rgba(4, 19, 48, 0.26);
+}
+body.clarix.mood-flow .journal-input:focus {
+  border-bottom-color: var(--clarix-navy);
+  box-shadow: 0 1px 0 var(--clarix-navy);
+}
+body.clarix.mood-flow .journal-preview-card {
+  background: rgba(255, 255, 255, 0.56);
+  color: var(--clarix-navy);
+  border: 1px solid rgba(4, 19, 48, 0.08);
+  box-shadow: 0 10px 24px rgba(4, 19, 48, 0.08);
+}
+body.clarix.mood-flow .clarix-cta-bar {
+  background: linear-gradient(to top, var(--clarix-bg) 72%, rgba(248,215,200,0));
+}
+body.clarix.mood-flow .btn-clarix-primary,
+.mood-step .btn-clarix-primary {
+  background: var(--clarix-navy);
+  box-shadow: 0 4px 14px rgba(4, 19, 48, 0.18);
+}
+body.clarix.mood-flow .btn-clarix-primary[disabled],
+body.clarix.mood-flow .btn-clarix-primary.is-disabled,
+.mood-step .btn-clarix-primary[disabled],
+.mood-step .btn-clarix-primary.is-disabled {
+  background: rgba(4, 19, 48, 0.25);
+}
+body.clarix.mood-flow .btn-clarix-ghost,
+.mood-step .btn-clarix-ghost {
+  color: var(--clarix-navy);
+  border-color: rgba(4, 19, 48, 0.42);
+}
+
 /* Sticky bottom CTA bar (used by mood pick / journal / preview) */
 .clarix-cta-bar {
   position: fixed;

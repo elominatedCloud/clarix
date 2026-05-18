@@ -558,7 +558,7 @@
               else if (parsed.error) message = parsed.error;
             } catch (ignore) {}
             if (r.status === 503) {
-              throw new Error('AI 설정이 비어 있습니다. Railway에 GEMINI_API_KEY를 추가한 뒤 다시 배포해 주세요.');
+              throw new Error('AI 설정이 비어 있습니다. Railway 앱 서비스에 GEMINI_API_KEY 또는 GOOGLE_API_KEY를 추가한 뒤 다시 배포해 주세요.');
             }
             throw new Error(r.status + ' · ' + message);
           }

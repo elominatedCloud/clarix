@@ -17,7 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * 의사 자유 노트 + 환자 컨텍스트를 Gemini에 보내 SOAP 4 필드를 자동 작성.
- * 키는 환경변수 GEMINI_API_KEY (application.properties → gemini.api.key).
+ * 키는 환경변수 GEMINI_API_KEY 또는 GOOGLE_API_KEY (application.properties → gemini.api.key).
  */
 @Service
 public class GeminiSoapService {
@@ -44,7 +44,7 @@ public class GeminiSoapService {
     public Soap autofill(UUID patientId, String freeText) {
         if (apiKey == null || apiKey.isBlank()) {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
-                "GEMINI_API_KEY가 설정되지 않았습니다");
+                "GEMINI_API_KEY 또는 GOOGLE_API_KEY가 설정되지 않았습니다");
         }
         User patient = users.findById(patientId).orElseThrow(
             () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "환자를 찾을 수 없음"));
