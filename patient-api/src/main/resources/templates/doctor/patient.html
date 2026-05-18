@@ -550,8 +550,17 @@
             body: fd,
           });
           if (!r.ok) {
-            const err = await r.text();
-            throw new Error(r.status + ' · ' + err.slice(0, 200));
+            const raw = await r.text();
+            let message = raw.slice(0, 200);
+            try {
+              const parsed = JSON.parse(raw);
+              if (parsed.message) message = parsed.message;
+              else if (parsed.error) message = parsed.error;
+            } catch (ignore) {}
+            if (r.status === 503) {
+              throw new Error('AI 설정이 비어 있습니다. Railway에 GEMINI_API_KEY를 추가한 뒤 다시 배포해 주세요.');
+            }
+            throw new Error(r.status + ' · ' + message);
           }
           const j = await r.json();
           if (j.subjective) fields.subjective.value = j.subjective;
