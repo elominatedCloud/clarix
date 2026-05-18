@@ -4,9 +4,21 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Clarix · 병원 설정</title>
+  <script>
+    (function () {
+      try {
+        var stored = localStorage.getItem('clarix-doctor-theme');
+        var dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.dataset.theme = stored || (dark ? 'dark' : 'light');
+      } catch (e) {
+        document.documentElement.dataset.theme = 'light';
+      }
+    })();
+  </script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
   <link rel="stylesheet" th:href="@{/css/tokens.css}" />
   <link rel="stylesheet" th:href="@{/css/doctor.css}" />
+  <script defer th:src="@{/js/doctor-theme.js}"></script>
   <style>
     .welcome-shell { max-width: 720px; margin: 24px auto; padding: 0 16px; }
     .tab-row { display:flex; gap:6px; margin-bottom: 14px; }
@@ -38,6 +50,13 @@
 </head>
 <body class="doctor">
   <div class="welcome-shell">
+    <div style="display:flex; justify-content:flex-end; margin-bottom:12px;">
+      <label class="theme-switch" title="라이트/다크 전환">
+        <input type="checkbox" data-theme-toggle aria-label="다크 모드" />
+        <span class="theme-switch-track" aria-hidden="true"><span class="theme-switch-thumb"></span></span>
+        <span class="theme-switch-label" data-theme-label>Light</span>
+      </label>
+    </div>
     <h1 style="margin:0 0 4px; font-size:20px; letter-spacing:-0.01em;">병원을 선택해주세요</h1>
     <p style="color:var(--text-muted); font-size:13px; margin:0 0 16px;">
       의사 본인이 소속된 병원을 선택하면 같은 병원의 환자/직원이 연결됩니다.<br/>
