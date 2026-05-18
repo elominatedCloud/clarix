@@ -21,41 +21,56 @@
   <link rel="stylesheet" th:href="@{/css/doctor.css}" />
   <script defer th:src="@{/js/doctor-theme.js}"></script>
 </head>
-<body class="doctor">
+<body class="doctor doctor-reference">
   <div class="doctor-shell">
-    <aside class="sidebar">
-      <div class="sidebar-brand">Clarix</div>
-
-      <div class="sidebar-section">Workspace</div>
-      <a class="sidebar-item" th:href="@{/doctor/(view='all')}"
-         th:attr="data-active=${view == 'all'}">
-        <span>All Patients</span>
-        <span class="count" th:text="${#lists.size(rows)}">0</span>
+    <aside class="sidebar" aria-label="의사 메뉴">
+      <a class="sidebar-logo" th:href="@{/doctor/}" aria-label="Clarix 홈">
+        <span class="sidebar-logo-mark" aria-hidden="true"></span>
+        <span class="sr-only">Clarix</span>
       </a>
-      <a class="sidebar-item" th:href="@{/doctor/(view='inbox')}"
-         th:attr="data-active=${view == 'inbox'}">
-        <span>Inbox · 위험</span>
-        <span class="count" data-tone="danger" th:text="${riskCount}">0</span>
-      </a>
-
-      <div class="sidebar-section">Admin</div>
-      <a class="sidebar-item" th:href="@{/doctor/admin}">직원 관리</a>
-
-      <div class="sidebar-section">Account</div>
-      <div class="sidebar-item sidebar-uid" style="font-family:var(--font-mono); font-size:11px; color:var(--text-muted)" th:text="${me.id.toString().substring(0,8)}">UID</div>
-      <form th:action="@{/auth/logout}" method="post" class="sidebar-logout">
-        <button class="sidebar-item" style="border:0; background:transparent; width:100%; text-align:left; cursor:pointer">로그아웃</button>
+      <nav class="rail-nav" aria-label="주요 메뉴">
+        <a class="rail-link" th:href="@{/doctor/(view='all')}" th:attr="data-active=${view == 'all'}" title="환자 목록" aria-label="환자 목록">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.6 12 3l9 7.6V21h-6v-6H9v6H3z"/></svg>
+          <span>환자 목록</span>
+        </a>
+        <a class="rail-link" th:href="@{/doctor/(view='inbox')}" th:attr="data-active=${view == 'inbox'}" title="위험 환자" aria-label="위험 환자">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5.5A3.5 3.5 0 0 1 8.5 2H21v17H8.5A3.5 3.5 0 0 0 5 22z"/><path d="M5 5.5A3.5 3.5 0 0 0 1.5 2H3v20"/></svg>
+          <span>위험 환자</span>
+        </a>
+        <a class="rail-link" th:href="@{/doctor/admin}" title="직원 관리" aria-label="직원 관리">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-3.8L6 21z"/></svg>
+          <span>직원 관리</span>
+        </a>
+        <a class="rail-link" href="#patientTable" title="분석" aria-label="분석">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16"/><path d="M5 16 9 11l4 3 6-8"/></svg>
+          <span>분석</span>
+        </a>
+      </nav>
+      <form th:action="@{/auth/logout}" method="post" class="rail-logout">
+        <button class="rail-link" type="submit" title="로그아웃" aria-label="로그아웃">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 7.5v9L12 21l8-4.5v-9z"/><path d="M12 8v8"/><path d="M8.5 10.5 12 8l3.5 2.5"/></svg>
+          <span>로그아웃</span>
+        </button>
       </form>
     </aside>
 
     <main class="doctor-main">
       <div class="topbar">
-        <div class="breadcrumb">
-          <span>Workspace</span>
-          <span class="sep">/</span>
-          <span class="current" th:text="${view == 'inbox'} ? '위험 환자' : 'All Patients'">All Patients</span>
-        </div>
+        <nav class="topbar-menu" aria-label="상단 메뉴">
+          <a th:href="@{/doctor/(view='all')}" th:attr="aria-current=${view == 'all'}">환자 목록</a>
+          <a th:href="@{/doctor/(view='inbox')}" th:attr="aria-current=${view == 'inbox'}">위험 환자</a>
+          <a th:href="@{/doctor/admin}">직원 관리</a>
+        </nav>
+        <form class="doctor-search" th:action="@{/doctor/}" method="get" role="search">
+          <input type="hidden" name="view" th:value="${view}" />
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 21-4.4-4.4"/><circle cx="11" cy="11" r="7"/></svg>
+          <input type="search" name="q" placeholder="Search anything" th:value="${q}" autocomplete="off" />
+        </form>
         <div class="topbar-right">
+          <div class="doctor-profile">
+            <span class="profile-name" th:text="${me.name}">의사</span>
+            <span class="profile-role">Chief Psychiatrist</span>
+          </div>
           <label class="theme-switch" title="라이트/다크 전환">
             <input type="checkbox" data-theme-toggle aria-label="다크 모드" />
             <span class="theme-switch-track" aria-hidden="true"><span class="theme-switch-thumb"></span></span>
@@ -123,7 +138,7 @@
           <span style="color:var(--text-muted); font-size:12px;">7일 순응도 · 최근 PHQ-9 기준 · 행 클릭으로 열기</span>
         </div>
 
-        <table class="dense-table">
+        <table class="dense-table" id="patientTable">
           <thead>
             <tr>
               <th style="width:80px">상태</th>

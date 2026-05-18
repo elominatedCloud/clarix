@@ -73,6 +73,14 @@ public class DoctorService {
         return hospitals.findByPartneredOrderByDistanceKmAsc(partnered);
     }
 
+    public User requireSharedPatient(UUID doctorId, UUID patientId) {
+        return permissions.findByPatientIdAndDoctorId(patientId, doctorId)
+            .filter(Permission::isActive)
+            .map(Permission::getPatient)
+            .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.FORBIDDEN, "no permission"));
+    }
+
     @Transactional
     public void assignHospital(User doctor, java.util.UUID hospitalId) {
         Hospital h = hospitals.findById(hospitalId).orElseThrow();

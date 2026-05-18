@@ -33,7 +33,6 @@ import com.clarix.domain.MedStatus;
 import com.clarix.domain.Prescription;
 import com.clarix.domain.Role;
 import com.clarix.domain.User;
-import com.clarix.repo.UserRepository;
 import com.clarix.service.AssessmentService;
 import com.clarix.service.CurrentUser;
 import com.clarix.service.DoctorService;
@@ -51,17 +50,15 @@ public class PatientController {
     private final AssessmentService assessmentSvc;
     private final DoctorService doctorSvc;
     private final DrugInteractionService drugSvc;
-    private final UserRepository users;
 
     public PatientController(CurrentUser current, PatientService patientSvc,
                              AssessmentService assessmentSvc, DoctorService doctorSvc,
-                             DrugInteractionService drugSvc, UserRepository users) {
+                             DrugInteractionService drugSvc) {
         this.current = current;
         this.patientSvc = patientSvc;
         this.assessmentSvc = assessmentSvc;
         this.doctorSvc = doctorSvc;
         this.drugSvc = drugSvc;
-        this.users = users;
     }
 
     /* ---- Today ---- */

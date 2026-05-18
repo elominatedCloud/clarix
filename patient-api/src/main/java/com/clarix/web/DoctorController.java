@@ -18,7 +18,6 @@ import com.clarix.dto.HospitalPickForm;
 import com.clarix.dto.StaffInviteForm;
 import com.clarix.domain.Role;
 import com.clarix.domain.User;
-import com.clarix.repo.UserRepository;
 import com.clarix.service.CurrentUser;
 import com.clarix.service.DoctorService;
 import com.clarix.service.DrugInteractionService;
@@ -36,23 +35,21 @@ public class DoctorController {
     private final NoteService noteSvc;
     private final DrugInteractionService drugSvc;
     private final PatientService patientSvc;
-    private final UserRepository users;
 
     public DoctorController(CurrentUser current, DoctorService doctorSvc,
                             NoteService noteSvc,
                             DrugInteractionService drugSvc,
-                            PatientService patientSvc,
-                            UserRepository users) {
+                            PatientService patientSvc) {
         this.current = current;
         this.doctorSvc = doctorSvc;
         this.noteSvc = noteSvc;
         this.drugSvc = drugSvc;
         this.patientSvc = patientSvc;
-        this.users = users;
     }
 
     @GetMapping({"", "/"})
     public String index(@RequestParam(defaultValue = "all") String view,
+                        @RequestParam(defaultValue = "") String q,
                         HttpSession session, Model model) {
         User me = current.requireRole(session, Role.DOCTOR);
         if (me.getHospital() == null) return "redirect:/doctor/welcome";
@@ -75,13 +72,23 @@ public class DoctorController {
         long missingMoodCount = allRows.stream()
             .filter(r -> r.lastEmotion() == null).count();
 
+        String query = q == null ? "" : q.trim();
+        String queryLower = query.toLowerCase(java.util.Locale.ROOT);
+        var searchedRows = queryLower.isBlank()
+            ? allRows
+            : allRows.stream()
+                .filter(r -> (r.name() != null && r.name().toLowerCase(java.util.Locale.ROOT).contains(queryLower))
+                    || r.id().toString().contains(queryLower))
+                .toList();
+
         var rows = "inbox".equals(view)
-            ? allRows.stream().filter(r -> "danger".equals(r.severityTone())).toList()
-            : allRows;
+            ? searchedRows.stream().filter(r -> "danger".equals(r.severityTone())).toList()
+            : searchedRows;
 
         model.addAttribute("me", me);
         model.addAttribute("rows", rows);
         model.addAttribute("view", view);
+        model.addAttribute("q", query);
         model.addAttribute("totalPatients", allRows.size());
         model.addAttribute("riskCount", riskCount);
         model.addAttribute("warnCount", warnCount);
@@ -96,8 +103,7 @@ public class DoctorController {
                                 @RequestParam(defaultValue = "chart") String mode,
                                 HttpSession session, Model model) {
         User me = current.requireRole(session, Role.DOCTOR);
-        User patient = users.findById(id).orElseThrow();
-        // permission check via timeline()
+        User patient = doctorSvc.requireSharedPatient(me.getId(), id);
         doctorSvc.timeline(me.getId(), id, 7);
         model.addAttribute("me", me);
         model.addAttribute("patient", patient);
@@ -169,9 +175,7 @@ public class DoctorController {
     @GetMapping("/patient/{id}/prescription-print")
     public String prescriptionPrint(@PathVariable UUID id, HttpSession session, Model model) {
         User me = current.requireRole(session, Role.DOCTOR);
-        User patient = users.findById(id).orElseThrow();
-        // 권한 체크는 doctorSvc.timeline()이 보장 (lastViewedAt 갱신 부수효과 없이는 별도 호출)
-        // 단순화: timeline() 호출로 권한 검증
+        User patient = doctorSvc.requireSharedPatient(me.getId(), id);
         doctorSvc.timeline(me.getId(), id, 1);
         model.addAttribute("me", me);
         model.addAttribute("patient", patient);
