@@ -1,13 +1,14 @@
 {
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
-    "builder": "RAILPACK"
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "Dockerfile"
   },
   "deploy": {
-    "startCommand": "java -XX:MaxRAMPercentage=75.0 -jar build/libs/patient-api-0.0.1-SNAPSHOT.jar",
-    "healthcheckPath": "/",
-    "healthcheckTimeout": 120,
+    "startCommand": "java -XX:MaxRAMPercentage=75.0 -jar /app/app.jar",
+    "healthcheckPath": "/auth/login",
+    "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 3
+    "restartPolicyMaxRetries": 10
   }
 }
