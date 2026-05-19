@@ -1707,8 +1707,8 @@ html[data-theme="dark"] body.doctor .rx-risk-box[data-tone="warn"] {
 
 /* ---------- Figma Web UI inspired doctor shell ---------- */
 body.doctor.doctor-reference {
-  --doctor-bg: #F6F4F7;
-  --doctor-sidebar-bg: #171A20;
+  --doctor-bg: #F5F6F8;
+  --doctor-sidebar-bg: #F5F6F8;
   --doctor-surface: rgba(255,255,255,0.88);
   --doctor-surface-muted: rgba(255,255,255,0.58);
   --doctor-surface-soft: rgba(30,33,40,0.06);
@@ -1724,8 +1724,8 @@ body.doctor.doctor-reference {
   --doctor-chart-navy-soft: rgba(63,76,244,0.16);
   --doctor-chart-grid: rgba(50,56,70,0.12);
   --doctor-chart-text: #646B7A;
-  --ref-rail-icon: rgba(255,255,255,0.12);
-  --ref-rail-icon-hover: rgba(255,255,255,0.18);
+  --ref-rail-icon: rgba(30,33,40,0.08);
+  --ref-rail-icon-hover: rgba(30,33,40,0.13);
   --ref-top-text: #394150;
   --ref-panel-border: rgba(19,24,33,0.08);
   background: var(--doctor-bg);
@@ -1737,47 +1737,55 @@ html[data-theme="dark"] body.doctor.doctor-reference {
   --text-tertiary: #8D7680;
   --border-subtle: rgba(255,232,240,0.13);
   --border-strong: rgba(255,232,240,0.22);
-  --doctor-bg: #191B20;
-  --doctor-sidebar-bg: #15171D;
-  --doctor-surface: rgba(67,38,51,0.68);
-  --doctor-surface-muted: rgba(255,232,240,0.055);
-  --doctor-surface-soft: rgba(255,232,240,0.08);
-  --doctor-hover: rgba(255,232,240,0.09);
-  --doctor-selected: rgba(255,139,97,0.18);
-  --doctor-accent: #FF8B61;
-  --doctor-accent-hover: #FF7447;
-  --doctor-accent-soft: rgba(255,139,97,0.16);
-  --doctor-chart-coral: #FF8B61;
-  --doctor-chart-coral-dim: #FF7048;
-  --doctor-chart-coral-soft: rgba(255,139,97,0.22);
-  --doctor-chart-navy: #F9D9E2;
-  --doctor-chart-navy-soft: rgba(249,217,226,0.14);
-  --doctor-chart-grid: rgba(255,232,240,0.14);
-  --doctor-chart-text: #D8B9C4;
-  --ref-rail-icon: rgba(255,232,240,0.13);
-  --ref-rail-icon-hover: rgba(255,232,240,0.20);
-  --ref-top-text: #DCC5CD;
-  --ref-panel-border: rgba(255,232,240,0.10);
+  --doctor-bg: #171A20;
+  --doctor-sidebar-bg: #171A20;
+  --doctor-surface: #252A33;
+  --doctor-surface-muted: #2D3340;
+  --doctor-surface-soft: #303746;
+  --doctor-hover: rgba(255,255,255,0.075);
+  --doctor-selected: rgba(42,167,255,0.16);
+  --doctor-accent: #2AA7FF;
+  --doctor-accent-hover: #51B8FF;
+  --doctor-accent-soft: rgba(42,167,255,0.16);
+  --doctor-chart-coral: #FF6676;
+  --doctor-chart-coral-dim: #F05264;
+  --doctor-chart-coral-soft: rgba(255,102,118,0.22);
+  --doctor-chart-navy: #4168FF;
+  --doctor-chart-navy-soft: rgba(65,104,255,0.20);
+  --doctor-chart-grid: rgba(218,228,244,0.13);
+  --doctor-chart-text: #B8C1CF;
+  --ref-rail-icon: rgba(255,255,255,0.12);
+  --ref-rail-icon-hover: rgba(255,255,255,0.18);
+  --ref-top-text: #D6DCE6;
+  --ref-panel-border: rgba(230,237,248,0.08);
 }
 
 body.doctor.doctor-reference .doctor-shell {
-  grid-template-columns: 96px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+  position: relative;
+  min-height: 100vh;
   background: var(--doctor-bg);
 }
 
 body.doctor.doctor-reference .doctor-main {
   min-height: 100vh;
+  padding-top: 118px;
   background: var(--doctor-bg);
 }
 
 body.doctor.doctor-reference .sidebar {
-  position: sticky;
+  position: absolute;
   top: 0;
-  height: 100vh;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  height: 118px;
+  flex-direction: row;
   align-items: center;
+  gap: 28px;
   border-right: 0;
   background: var(--doctor-sidebar-bg);
-  padding: 30px 16px 22px;
+  padding: 0 36px;
   overflow: visible;
 }
 
@@ -1806,18 +1814,21 @@ body.doctor.doctor-reference .sidebar-logo-mark {
 body.doctor.doctor-reference .rail-nav,
 body.doctor.doctor-reference .rail-logout {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   gap: 18px;
-  width: 100%;
+  width: auto;
 }
 
 body.doctor.doctor-reference .rail-nav {
-  margin-top: 34px;
+  margin-top: 0;
 }
 
 body.doctor.doctor-reference .rail-logout {
-  margin-top: auto;
+  position: absolute;
+  top: 32px;
+  right: 36px;
+  margin-top: 0;
 }
 
 body.doctor.doctor-reference .rail-link {
@@ -1826,7 +1837,7 @@ body.doctor.doctor-reference .rail-link {
   border: 0;
   border-radius: 14px;
   background: var(--ref-rail-icon);
-  color: rgba(255,255,255,0.58);
+  color: var(--text-muted);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1843,7 +1854,7 @@ body.doctor.doctor-reference .rail-link:hover {
 
 body.doctor.doctor-reference .rail-link[data-active="true"] {
   color: var(--doctor-accent);
-  background: rgba(255,255,255,0.18);
+  background: var(--doctor-selected);
 }
 
 body.doctor.doctor-reference .rail-link svg {
@@ -1861,21 +1872,23 @@ body.doctor.doctor-reference .rail-link span {
 }
 
 body.doctor.doctor-reference .topbar {
-  height: 88px;
+  position: absolute;
+  top: 0;
+  left: clamp(430px, 35vw, 550px);
+  right: 116px;
+  z-index: 35;
+  height: 118px;
   display: grid;
-  grid-template-columns: minmax(250px, 1fr) minmax(220px, 360px) max-content;
+  grid-template-columns: minmax(230px, 440px) max-content;
   gap: 24px;
   align-items: center;
-  padding: 0 36px 0 28px;
+  padding: 0;
   border-bottom: 0;
   background: transparent;
 }
 
 body.doctor.doctor-reference .topbar-menu {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
+  display: none;
 }
 
 body.doctor.doctor-reference .topbar-menu a {
@@ -1899,6 +1912,7 @@ body.doctor.doctor-reference .topbar-menu a[aria-current="true"] {
 
 body.doctor.doctor-reference .doctor-search {
   height: 40px;
+  grid-column: 1;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -1907,6 +1921,12 @@ body.doctor.doctor-reference .doctor-search {
   border: 1px solid var(--ref-panel-border);
   border-radius: 10px;
   min-width: 0;
+}
+
+body.doctor.doctor-reference .topbar-right {
+  grid-column: 2;
+  justify-self: end;
+  gap: 10px;
 }
 
 body.doctor.doctor-reference .doctor-search svg {
@@ -1957,6 +1977,36 @@ body.doctor.doctor-reference .avatar {
   background: var(--doctor-surface);
   border: 1px solid var(--ref-panel-border);
   color: var(--doctor-accent);
+}
+
+body.doctor.doctor-reference .theme-switch {
+  width: 54px;
+  height: 54px;
+  justify-content: center;
+  border-radius: 14px;
+  background: var(--ref-rail-icon);
+}
+
+body.doctor.doctor-reference .theme-switch:hover {
+  background: var(--ref-rail-icon-hover);
+}
+
+body.doctor.doctor-reference .theme-switch-track {
+  width: 34px;
+  height: 20px;
+}
+
+body.doctor.doctor-reference .theme-switch-thumb {
+  width: 14px;
+  height: 14px;
+}
+
+body.doctor.doctor-reference .theme-switch input:checked + .theme-switch-track .theme-switch-thumb {
+  transform: translateX(14px);
+}
+
+body.doctor.doctor-reference .theme-switch-label {
+  display: none;
 }
 
 body.doctor.doctor-reference .content {
@@ -2237,14 +2287,32 @@ html[data-theme="dark"] body.doctor.doctor-reference .rx-progress {
 }
 
 @media (max-width: 1180px) {
-  body.doctor.doctor-reference .topbar {
-    grid-template-columns: 1fr minmax(220px, 320px);
+  body.doctor.doctor-reference .doctor-main {
+    padding-top: 0;
+  }
+  body.doctor.doctor-reference .sidebar {
+    position: static;
     height: auto;
-    padding-top: 18px;
-    padding-bottom: 16px;
+    padding: 18px 24px 10px;
+    gap: 18px;
+  }
+  body.doctor.doctor-reference .rail-nav {
+    gap: 10px;
+  }
+  body.doctor.doctor-reference .rail-logout {
+    position: static;
+    margin-left: auto;
+  }
+  body.doctor.doctor-reference .topbar {
+    position: static;
+    left: auto;
+    right: auto;
+    grid-template-columns: 1fr max-content;
+    height: auto;
+    padding: 8px 24px 20px;
   }
   body.doctor.doctor-reference .topbar-right {
-    grid-column: 1 / -1;
+    grid-column: auto;
     justify-content: flex-end;
   }
   body.doctor.doctor-reference .pt-layout {
@@ -2282,6 +2350,7 @@ html[data-theme="dark"] body.doctor.doctor-reference .rx-progress {
     margin-top: 0;
   }
   body.doctor.doctor-reference .rail-logout {
+    position: static;
     margin-left: auto;
   }
   body.doctor.doctor-reference .rail-link {
@@ -2294,6 +2363,7 @@ html[data-theme="dark"] body.doctor.doctor-reference .rx-progress {
     height: 22px;
   }
   body.doctor.doctor-reference .topbar {
+    position: static;
     grid-template-columns: 1fr;
     gap: 12px;
     padding: 16px;
