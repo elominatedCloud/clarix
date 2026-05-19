@@ -1,7 +1,10 @@
 {
   "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "builder": "RAILPACK"
+  },
   "deploy": {
-    "startCommand": null,
+    "startCommand": "java -XX:MaxRAMPercentage=75.0 -jar build/libs/patient-api-0.0.1-SNAPSHOT.jar",
     "healthcheckPath": null,
     "healthcheckTimeout": null,
     "restartPolicyType": "ON_FAILURE",
