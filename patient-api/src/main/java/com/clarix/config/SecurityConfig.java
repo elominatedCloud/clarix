@@ -26,6 +26,7 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
+        // BCrypt는 salt를 자동 포함하므로 같은 비밀번호도 매번 다른 해시가 됩니다.
         return new BCryptPasswordEncoder();
     }
 
@@ -34,7 +35,9 @@ public class SecurityConfig {
                                            UserRepository users) throws Exception {
         http
             .authorizeHttpRequests(a -> a
+                // 정적 리소스와 인증 화면은 로그인 전에도 접근 가능해야 합니다.
                 .requestMatchers("/", "/health", "/auth/**", "/css/**", "/js/**", "/img/**").permitAll()
+                // URL prefix마다 역할을 분리해 화면 진입 자체를 막습니다.
                 .requestMatchers("/patient/**").hasAuthority(Role.PATIENT.name())
                 .requestMatchers("/doctor/**").hasAuthority(Role.DOCTOR.name())
                 .requestMatchers("/reception/**").hasAuthority(Role.RECEPTIONIST.name())
@@ -45,11 +48,19 @@ public class SecurityConfig {
             )
             .formLogin(f -> f
                 .loginPage("/auth/login")
+                // 이 URL은 HomeController가 아니라 Spring Security filter가 처리합니다.
                 .loginProcessingUrl("/auth/login")
                 .usernameParameter("email")
                 .passwordParameter("password")
                 .successHandler(roleBasedSuccessHandler(users))
-                .failureUrl("/auth/login?error=1")
+                .failureHandler((request, response, exception) -> {
+                    // 로그인 실패 후에도 환자/의사 로그인 화면 문맥을 유지하기 위한 role 파라미터입니다.
+                    String role = "doctor".equalsIgnoreCase(request.getParameter("role"))
+                        ? "doctor"
+                        : "patient";
+                    response.sendRedirect(request.getContextPath()
+                        + "/auth/login?role=" + role + "&error=1");
+                })
                 .permitAll()
             )
             .logout(l -> l
@@ -58,12 +69,7 @@ public class SecurityConfig {
                 .invalidateHttpSession(true)
                 .deleteCookies("JSESSIONID")
                 .permitAll()
-            )
-            // LLM autofill은 fetch 기반이라 CSRF 토큰을 form으로 못 받아서 면제 (인증은 그대로).
-            .csrf(c -> c.ignoringRequestMatchers(
-                "/doctor/patient/*/llm-soap",
-                "/doctor/drug-check"
-            ));
+            );
 
         return http.build();
     }
@@ -74,6 +80,7 @@ public class SecurityConfig {
             protected String determineTargetUrl(jakarta.servlet.http.HttpServletRequest request,
                                                 jakarta.servlet.http.HttpServletResponse response,
                                                 org.springframework.security.core.Authentication authentication) {
+                // Authentication에는 email/authority만 있으므로 DB에서 최신 User role을 다시 확인합니다.
                 String email = authentication.getName();
                 User u = users.findByEmail(email).orElse(null);
                 if (u == null) return "/";

@@ -75,6 +75,11 @@
       </div>
 
       <div class="content">
+        <div th:if="${formError}" class="doctor-alert warn" style="margin-bottom:16px;">
+          <span class="badge">입력 확인</span>
+          <span th:text="${formError}">입력값을 확인하세요</span>
+        </div>
+
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
           <h2 style="margin:0">내원 예약 도움</h2>
           <span style="color:var(--text-muted); font-size:12px;">처방 종료 임박 환자 우선 · 미예약 환자 위쪽</span>

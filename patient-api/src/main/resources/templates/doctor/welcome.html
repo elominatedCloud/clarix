@@ -63,6 +63,11 @@
       목록에 없는 병원이라면 Clarix 관리자에게 등록을 요청해주세요.
     </p>
 
+    <div th:if="${formError}" class="doctor-alert warn" style="margin-bottom:14px;">
+      <span class="badge">입력 확인</span>
+      <span th:text="${formError}">입력값을 확인하세요</span>
+    </div>
+
     <div class="tab-row">
       <a th:href="@{/doctor/welcome(tab='partnered')}" th:classappend="${activeTab == 'partnered'} ? 'active'">연동 병원</a>
       <a th:href="@{/doctor/welcome(tab='nearby')}"    th:classappend="${activeTab == 'nearby'} ? 'active'">미연동 병원</a>

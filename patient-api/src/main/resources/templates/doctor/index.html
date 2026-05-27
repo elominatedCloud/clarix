@@ -30,25 +30,25 @@
       </a>
       <nav class="rail-nav" aria-label="주요 메뉴">
         <a class="rail-link" th:href="@{/doctor/(view='all')}" th:attr="data-active=${view == 'all'}" title="환자 목록" aria-label="환자 목록">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.6 12 3l9 7.6V21h-6v-6H9v6H3z"/></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10.5 9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>
           <span>환자 목록</span>
         </a>
         <a class="rail-link" th:href="@{/doctor/(view='inbox')}" th:attr="data-active=${view == 'inbox'}" title="위험 환자" aria-label="위험 환자">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5.5A3.5 3.5 0 0 1 8.5 2H21v17H8.5A3.5 3.5 0 0 0 5 22z"/><path d="M5 5.5A3.5 3.5 0 0 0 1.5 2H3v20"/></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M4 14h4l2 3h4l2-3h4"/><path d="M8 8h8"/></svg>
           <span>위험 환자</span>
         </a>
         <a class="rail-link" th:href="@{/doctor/admin}" title="직원 관리" aria-label="직원 관리">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-3.8L6 21z"/></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 20v-1.5a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20"/><circle cx="9.5" cy="7.5" r="3.5"/><path d="M21 20v-1.5a3.5 3.5 0 0 0-2.5-3.35"/><path d="M16.5 4.3a3.5 3.5 0 0 1 0 6.4"/></svg>
           <span>직원 관리</span>
         </a>
         <a class="rail-link" href="#patientTable" title="분석" aria-label="분석">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16"/><path d="M5 16 9 11l4 3 6-8"/></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3 7 4-14 3 7h4"/></svg>
           <span>분석</span>
         </a>
       </nav>
       <form th:action="@{/auth/logout}" method="post" class="rail-logout">
-        <button class="rail-link" type="submit" title="로그아웃" aria-label="로그아웃">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 7.5v9L12 21l8-4.5v-9z"/><path d="M12 8v8"/><path d="M8.5 10.5 12 8l3.5 2.5"/></svg>
+        <button class="rail-link rail-action" type="submit" title="로그아웃" aria-label="로그아웃">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h4v16h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>
           <span>로그아웃</span>
         </button>
       </form>
@@ -58,7 +58,7 @@
       <div class="topbar">
         <nav class="topbar-menu" aria-label="상단 메뉴">
           <a th:href="@{/doctor/(view='all')}" th:attr="aria-current=${view == 'all'}">환자 목록</a>
-          <a th:href="@{/doctor/(view='inbox')}" th:attr="aria-current=${view == 'inbox'}">위험 환자</a>
+          <a th:href="@{/doctor/(view='inbox')}" th:attr="aria-current=${view == 'inbox'}">위험 인박스</a>
           <a th:href="@{/doctor/admin}">직원 관리</a>
         </nav>
         <form class="doctor-search" th:action="@{/doctor/}" method="get" role="search">

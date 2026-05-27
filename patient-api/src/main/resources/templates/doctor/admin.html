@@ -56,6 +56,11 @@
       </div>
 
       <div class="content">
+        <div th:if="${formError}" class="doctor-alert warn" style="margin-bottom:16px;">
+          <span class="badge">입력 확인</span>
+          <span th:text="${formError}">입력값을 확인하세요</span>
+        </div>
+
         <div th:if="${me.hospital == null}"
              style="background:#FFFBEB; border:1px solid #FCD34D; border-radius:6px; padding:12px 14px; margin-bottom:16px; font-size:13px; color:#854D0E;">
           병원이 설정되어 있지 않아 직원 초대를 발급할 수 없습니다.

@@ -74,6 +74,8 @@ public class DoctorService {
     }
 
     public User requireSharedPatient(UUID doctorId, UUID patientId) {
+        // 의사는 Permission이 활성화된 환자만 조회할 수 있습니다.
+        // 이 체크가 빠지면 URL의 patientId만 바꿔 다른 환자를 볼 수 있습니다.
         return permissions.findByPatientIdAndDoctorId(patientId, doctorId)
             .filter(Permission::isActive)
             .map(Permission::getPatient)
@@ -114,6 +116,8 @@ public class DoctorService {
     }
 
     public List<PatientRow> patientsForDoctor(UUID doctorId, int days) {
+        // 대시보드 리스트는 여러 테이블의 최근 데이터를 모아 환자별 요약 row를 만듭니다.
+        // Controller에서 계산하지 않고 Service에서 만들면 의사 화면/API가 같은 규칙을 재사용할 수 있습니다.
         List<Permission> perms = permissions.findByDoctorIdAndActiveTrue(doctorId);
         if (perms.isEmpty()) return List.of();
         List<UUID> patientIds = perms.stream().map(p -> p.getPatient().getId()).toList();
@@ -168,6 +172,7 @@ public class DoctorService {
 
         List<PatientRow> rows = new ArrayList<>();
         for (UUID pid : patientIds) {
+            // expected = 처방 슬롯 수 * 기간. PRN처럼 의무 복용이 아닌 슬롯은 별도 로직에서 제외할 수 있습니다.
             int expected = slotsByPatient.getOrDefault(pid, 0) * days;
             Integer adherence = expected == 0 ? null
                 : (int) Math.round(takenByPatient.getOrDefault(pid, 0) * 100.0 / expected);
@@ -203,6 +208,7 @@ public class DoctorService {
     /** Chart.js datasets에 맞춘 일자별 시리즈. 권한 체크 + lastViewedAt 갱신. */
     @Transactional
     public Map<String, Object> timeline(UUID doctorId, UUID patientId, int days) {
+        // 읽기 API처럼 보이지만 lastViewedAt을 갱신하므로 트랜잭션이 필요합니다.
         var perm = permissions.findByPatientIdAndDoctorId(patientId, doctorId)
             .filter(Permission::isActive)
             .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
@@ -297,6 +303,7 @@ public class DoctorService {
 
     @Transactional
     public ClinicalNote createSoap(User doctor, UUID patientId, String s, String o, String a, String p) {
+        // 저장 전 권한을 다시 확인합니다. 화면에서 버튼을 숨기는 것만으로는 보안이 되지 않습니다.
         User patient = users.findById(patientId).orElseThrow();
         if (!permissions.existsByPatientIdAndDoctorIdAndActiveTrue(patientId, doctor.getId())) {
             throw new org.springframework.web.server.ResponseStatusException(
@@ -331,8 +338,14 @@ public class DoctorService {
     }
 
     @Transactional
-    public void togglePermission(UUID permissionId, boolean active) {
-        permissions.findById(permissionId).ifPresent(p -> { p.setActive(active); permissions.save(p); });
+    public void togglePermission(UUID patientId, UUID permissionId, boolean active) {
+        Permission p = permissions.findById(permissionId).orElseThrow();
+        if (!p.getPatient().getId().equals(patientId)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.FORBIDDEN, "no permission");
+        }
+        p.setActive(active);
+        permissions.save(p);
     }
 
     public List<Permission> permissionsForPatient(UUID patientId) {
@@ -538,6 +551,8 @@ public class DoctorService {
     public record Alert(String tone, String text) {}
 
     public PatientHeader patientHeader(UUID patientId) {
+        // 환자 상세 상단 카드에 필요한 값을 한 번에 계산하는 읽기 모델입니다.
+        // Entity를 그대로 템플릿에 많이 넘기기보다 record로 화면 전용 데이터를 만들었습니다.
         User patient = users.findById(patientId).orElseThrow();
 
         var rxList = prescriptions.findByPatientIdAndActiveTrueOrderByCreatedAtAsc(patientId);

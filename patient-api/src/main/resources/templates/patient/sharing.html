@@ -76,6 +76,11 @@
       연동된 의사만 내 기록을 볼 수 있어요.<br/>언제든 켜고 끌 수 있어요.
     </p>
 
+    <div th:if="${formError}" class="alert-banner warn" style="margin-top:14px;">
+      <span class="icon">!</span>
+      <div class="body"><strong th:text="${formError}">입력값을 확인하세요</strong></div>
+    </div>
+
     <div class="section-title-clarix">연동된 의사</div>
     <div th:if="${#lists.isEmpty(shares)}" class="empty-clarix">
       아직 연동된 의사가 없어요.

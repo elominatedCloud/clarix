@@ -38,6 +38,10 @@
 
       <div class="detail-grid" style="grid-template-columns: 1fr;">
         <div class="detail-pane">
+          <div th:if="${formError}" class="doctor-alert warn" style="margin-bottom:16px;">
+            <span class="badge">입력 확인</span>
+            <span th:text="${formError}">입력값을 확인하세요</span>
+          </div>
 
           <!-- 환자 자가보고 (read-only) -->
           <div class="charting-self-report">

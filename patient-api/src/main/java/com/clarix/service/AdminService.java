@@ -30,6 +30,7 @@ public class AdminService {
     ) {}
 
     public List<HospitalRow> hospitalRows() {
+        // 병원 목록 화면은 병원 자체 정보 + 소속 사용자 수를 같이 보여줘야 하므로 view 전용 row로 변환합니다.
         var all = hospitals.findAll();
         var allUsers = users.findAll();
         return all.stream().map(h -> {

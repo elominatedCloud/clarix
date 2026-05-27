@@ -11,7 +11,6 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.clarix.domain.User;
-import com.clarix.repo.UserRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -24,30 +23,27 @@ public class GeminiSoapService {
 
     private final String apiKey;
     private final String model;
-    private final UserRepository users;
     private final DoctorService doctorSvc;
     private final ObjectMapper json = new ObjectMapper();
     private final RestClient http = RestClient.builder().build();
 
     public GeminiSoapService(@Value("${gemini.api.key:}") String apiKey,
                              @Value("${gemini.api.model:gemini-2.0-flash}") String model,
-                             UserRepository users,
                              DoctorService doctorSvc) {
         this.apiKey = apiKey;
         this.model = model;
-        this.users = users;
         this.doctorSvc = doctorSvc;
     }
 
     public record Soap(String subjective, String objective, String assessment, String plan) {}
 
-    public Soap autofill(UUID patientId, String freeText) {
+    public Soap autofill(UUID doctorId, UUID patientId, String freeText) {
         if (apiKey == null || apiKey.isBlank()) {
+            // 외부 API 설정 문제는 503으로 돌려 UI가 "일시 사용 불가"로 처리하게 합니다.
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
                 "GEMINI_API_KEY 또는 GOOGLE_API_KEY가 설정되지 않았습니다");
         }
-        User patient = users.findById(patientId).orElseThrow(
-            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "환자를 찾을 수 없음"));
+        User patient = doctorSvc.requireSharedPatient(doctorId, patientId);
 
         String prompt = buildPrompt(patient, freeText);
 
@@ -74,6 +70,7 @@ public class GeminiSoapService {
                 .body(String.class);
 
             JsonNode root = json.readTree(responseBody);
+            // Gemini 응답 구조에서 실제 모델 텍스트는 candidates[0].content.parts[0].text에 들어옵니다.
             String text = root.path("candidates").path(0)
                 .path("content").path("parts").path(0).path("text").asText();
             if (text == null || text.isBlank()) {

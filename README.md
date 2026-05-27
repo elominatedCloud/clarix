@@ -31,8 +31,14 @@
 
 ```text
 maum_med/
+├── AGENTS.md
 ├── prd.md
 ├── docs/
+│   ├── decisions.md
+│   ├── handoff.md
+│   ├── issues.md
+│   ├── memory.md
+│   ├── prd-demo-stabilization.md
 │   └── 실행방법.md
 └── patient-api/
     ├── build.gradle
@@ -51,6 +57,19 @@ maum_med/
             ├── static/
             └── templates/
 ```
+
+## 에이전트 운영 방식
+
+이 프로젝트는 장기 작업 관리를 위해 하네스 엔지니어링 문서를 사용합니다.
+
+| 문서 | 용도 |
+|---|---|
+| `AGENTS.md` | Codex/Claude Code가 따라야 할 작업 규칙 |
+| `docs/handoff.md` | 현재 진행 상태와 다음 세션 인수인계 |
+| `docs/memory.md` | 반복 실패, Railway/MySQL/AI SOAP 주의사항 |
+| `docs/decisions.md` | 유지해야 할 아키텍처/운영 결정 |
+| `docs/prd-demo-stabilization.md` | 데모 안정화 PRD |
+| `docs/issues.md` | vertical slice 작업 목록 |
 
 ## MySQL 준비
 

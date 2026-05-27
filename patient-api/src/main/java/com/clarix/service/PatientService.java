@@ -109,17 +109,27 @@ public class PatientService {
     }
 
     @Transactional
-    public void updateStorage(UUID prescriptionId, String storageLocation, String photoUrl) {
-        prescriptions.findById(prescriptionId).ifPresent(p -> {
-            p.setStorageLocation(storageLocation == null || storageLocation.isBlank() ? null : storageLocation.trim());
-            if (photoUrl != null) p.setStoragePhotoUrl(photoUrl.isBlank() ? null : photoUrl.trim());
-            prescriptions.save(p);
-        });
+    public void updateStorage(UUID patientId, UUID prescriptionId, String storageLocation, String photoUrl) {
+        Prescription p = requireOwnPrescription(patientId, prescriptionId);
+        p.setStorageLocation(storageLocation == null || storageLocation.isBlank() ? null : storageLocation.trim());
+        if (photoUrl != null) p.setStoragePhotoUrl(photoUrl.isBlank() ? null : photoUrl.trim());
+        prescriptions.save(p);
     }
 
     @Transactional
-    public void deactivatePrescription(UUID id) {
-        prescriptions.findById(id).ifPresent(p -> { p.setActive(false); prescriptions.save(p); });
+    public void deactivatePrescription(UUID patientId, UUID prescriptionId) {
+        Prescription p = requireOwnPrescription(patientId, prescriptionId);
+        p.setActive(false);
+        prescriptions.save(p);
+    }
+
+    private Prescription requireOwnPrescription(UUID patientId, UUID prescriptionId) {
+        Prescription p = prescriptions.findById(prescriptionId).orElseThrow();
+        if (!p.getPatient().getId().equals(patientId)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.FORBIDDEN, "no permission");
+        }
+        return p;
     }
 
     /* ---- medication logs ---- */
@@ -160,6 +170,8 @@ public class PatientService {
         OffsetDateTime windowStart = at.withMinute(0).withSecond(0);
         OffsetDateTime windowEnd = windowStart.plusHours(1).minusSeconds(1);
 
+        // 같은 약/같은 시간대는 한 번만 기록하고 상태만 갱신합니다.
+        // 사용자가 실수로 여러 번 눌러도 오늘 아침 약 로그가 중복 생성되지 않습니다.
         Optional<MedicationLog> existing = medLogs
             .findFirstByPatientIdAndMedicationNameAndTakenAtBetween(patient.getId(), medName, windowStart, windowEnd);
         MedicationLog m = existing.orElseGet(() -> {
@@ -183,7 +195,7 @@ public class PatientService {
         java.util.Set<String> takenKeys = new java.util.HashSet<>();
         for (var l : logs) {
             if (l.getStatus() != com.clarix.domain.MedStatus.TAKEN) continue;
-            int h = l.getTakenAt().getHour();
+            int h = l.getTakenAt().atZoneSameInstant(ZoneId.systemDefault()).getHour();
             String s = h < 11 ? "morning" : h < 17 ? "noon" : "evening";
             takenKeys.add(l.getMedicationName() + "|" + s);
         }
@@ -296,6 +308,7 @@ public class PatientService {
     @Transactional
     public SymptomLog upsertEmotion(User patient, Emotion emotion, String journal) {
         LocalDate today = LocalDate.now();
+        // 감정 기록은 하루 1행으로 유지합니다. 이미 있으면 update, 없으면 insert.
         SymptomLog row = symptomLogs.findByPatientIdAndLogDate(patient.getId(), today)
             .orElseGet(() -> {
                 SymptomLog x = new SymptomLog();
@@ -305,7 +318,7 @@ public class PatientService {
             });
         row.setEmotion(emotion);
         row.setJournal(journal);
-        // keep moodScore aligned for doctor charts
+        // 의사용 차트는 숫자 moodScore를 사용하므로 감정 enum 점수와 동기화합니다.
         row.setMoodScore(emotion.score());
         return symptomLogs.save(row);
     }

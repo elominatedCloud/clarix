@@ -46,6 +46,7 @@ public class DoctorApiController {
     public Map<String, Object> timeline(@PathVariable UUID id,
                                         @RequestParam(defaultValue = "7") int days,
                                         HttpSession session) {
+        // @RestController는 템플릿 이름이 아니라 객체를 JSON으로 직렬화해 응답합니다.
         User me = current.requireRole(session, Role.DOCTOR);
         return doctorSvc.timeline(me.getId(), id, days);
     }
@@ -65,9 +66,9 @@ public class DoctorApiController {
     public ResponseEntity<?> llmSoap(@PathVariable UUID id,
                                      @RequestParam(name = "freeText", required = false) String freeText,
                                      HttpSession session) {
-        current.requireRole(session, Role.DOCTOR);
+        User me = current.requireRole(session, Role.DOCTOR);
         try {
-            return ResponseEntity.ok(geminiSvc.autofill(id, freeText));
+            return ResponseEntity.ok(geminiSvc.autofill(me.getId(), id, freeText));
         } catch (ResponseStatusException ex) {
             if (ex.getStatusCode().value() == 503) {
                 return ResponseEntity.status(503).body(Map.of(

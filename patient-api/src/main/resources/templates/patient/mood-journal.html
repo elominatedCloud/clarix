@@ -19,6 +19,11 @@
       한줄/두줄로 짧게 써주세요!
     </h1>
 
+    <div th:if="${formError}" class="alert-banner warn" style="margin-bottom:14px;">
+      <span class="icon">!</span>
+      <div class="body"><strong th:text="${formError}">입력값을 확인하세요</strong></div>
+    </div>
+
     <div class="journal-stage">
       <span class="emotion-bubble" th:attr="data-mood=${emotion.slug()}" th:text="${emotion.emoji()}">😢</span>
       <span class="emotion-label" th:text="${emotion.label()}">감정</span>

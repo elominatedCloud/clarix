@@ -31,6 +31,11 @@
       </div>
 
       <div class="content">
+        <div th:if="${formError}" class="doctor-alert warn" style="margin-bottom:16px;">
+          <span class="badge">입력 확인</span>
+          <span th:text="${formError}">입력값을 확인하세요</span>
+        </div>
+
         <h2 style="margin:0 0 8px;">사용자 목록 · 역할 / 병원 변경</h2>
         <p style="font-size:12px; color:var(--text-muted); margin:0 0 12px;">
           역할 또는 소속 병원을 바꾸면 즉시 적용됩니다. 환자 → 의사 변환 등 직접적인 권한 이동에 주의.

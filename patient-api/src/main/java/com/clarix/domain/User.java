@@ -19,6 +19,10 @@ public class User {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    /**
+     * 권한의 기준이 되는 역할입니다.
+     * SecurityConfig의 URL 접근 제어와 화면 redirect가 이 값을 사용합니다.
+     */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private Role role;

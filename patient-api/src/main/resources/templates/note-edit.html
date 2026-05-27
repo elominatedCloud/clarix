@@ -23,6 +23,11 @@
       </div>
 
       <div class="content" style="max-width:840px;">
+        <div th:if="${formError}" class="doctor-alert warn" style="margin-bottom:16px;">
+          <span class="badge">입력 확인</span>
+          <span th:text="${formError}">입력값을 확인하세요</span>
+        </div>
+
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
           <span class="status-pill"
                 th:attr="data-tone=${note.kind.name() == 'SOAP' ? 'ok' : (note.kind.name() == 'NURSING' ? 'warn' : 'muted')}"

@@ -3,6 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="_csrf" th:content="${_csrf.token}" />
+  <meta name="_csrf_header" th:content="${_csrf.headerName}" />
   <title>Clarix · 환자 상세</title>
   <script>
     (function () {
@@ -30,26 +32,26 @@
         <span class="sr-only">Clarix</span>
       </a>
       <nav class="rail-nav" aria-label="주요 메뉴">
-        <a class="rail-link" th:href="@{/doctor/}" data-active="true" title="환자 목록" aria-label="환자 목록">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.6 12 3l9 7.6V21h-6v-6H9v6H3z"/></svg>
+        <a class="rail-link" th:href="@{/doctor/}" title="환자 목록" aria-label="환자 목록">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10.5 9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>
           <span>환자 목록</span>
         </a>
         <a class="rail-link" th:href="@{/doctor/(view='inbox')}" title="위험 환자" aria-label="위험 환자">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5.5A3.5 3.5 0 0 1 8.5 2H21v17H8.5A3.5 3.5 0 0 0 5 22z"/><path d="M5 5.5A3.5 3.5 0 0 0 1.5 2H3v20"/></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M4 14h4l2 3h4l2-3h4"/><path d="M8 8h8"/></svg>
           <span>위험 환자</span>
         </a>
         <a class="rail-link" th:href="@{/doctor/admin}" title="직원 관리" aria-label="직원 관리">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-3.8L6 21z"/></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 20v-1.5a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20"/><circle cx="9.5" cy="7.5" r="3.5"/><path d="M21 20v-1.5a3.5 3.5 0 0 0-2.5-3.35"/><path d="M16.5 4.3a3.5 3.5 0 0 1 0 6.4"/></svg>
           <span>직원 관리</span>
         </a>
-        <a class="rail-link" href="#timelineSection" title="진료 타임라인" aria-label="진료 타임라인">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16"/><path d="M5 16 9 11l4 3 6-8"/></svg>
+        <a class="rail-link" href="#timelineSection" data-active="true" title="진료 타임라인" aria-label="진료 타임라인">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3 7 4-14 3 7h4"/></svg>
           <span>진료 타임라인</span>
         </a>
       </nav>
       <form th:action="@{/auth/logout}" method="post" class="rail-logout">
-        <button class="rail-link" type="submit" title="로그아웃" aria-label="로그아웃">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 7.5v9L12 21l8-4.5v-9z"/><path d="M12 8v8"/><path d="M8.5 10.5 12 8l3.5 2.5"/></svg>
+        <button class="rail-link rail-action" type="submit" title="로그아웃" aria-label="로그아웃">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h4v16h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>
           <span>로그아웃</span>
         </button>
       </form>
@@ -58,9 +60,11 @@
     <main class="doctor-main">
       <div class="topbar">
         <nav class="topbar-menu" aria-label="상단 메뉴">
+          <a th:href="@{'/doctor/patient/' + ${patient.id} + '?mode=chart'}"
+             th:attr="aria-current=${mode != 'charting'}">진료 타임라인</a>
+          <a th:href="@{'/doctor/patient/' + ${patient.id} + '?mode=charting'}"
+             th:attr="aria-current=${mode == 'charting'}">차팅</a>
           <a th:href="@{/doctor/}">환자 목록</a>
-          <a th:href="@{/doctor/(view='inbox')}">위험 환자</a>
-          <a th:href="@{/doctor/admin}">직원 관리</a>
         </nav>
         <form class="doctor-search" th:action="@{/doctor/}" method="get" role="search">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 21-4.4-4.4"/><circle cx="11" cy="11" r="7"/></svg>
@@ -77,6 +81,13 @@
             <span class="theme-switch-label" data-theme-label>Light</span>
           </label>
           <span class="avatar" th:text="${#strings.toUpperCase(#strings.substring(me.name,0,1))}">의</span>
+        </div>
+      </div>
+
+      <div th:if="${formError}" style="padding: 12px 24px 0;">
+        <div class="doctor-alert warn">
+          <span class="badge">입력 확인</span>
+          <span th:text="${formError}">입력값을 확인하세요</span>
         </div>
       </div>
 
@@ -98,11 +109,25 @@
         <aside class="pt-side">
 
           <!-- 컴팩트 요약 -->
-          <div class="pt-summary">
-            <div class="pt-name" th:text="${header.name()}">환자명</div>
-            <div class="pt-sub"
-                 th:text="(${header.hospitalName() != null} ? ${header.hospitalName()} : '병원 미연결')
-                         + ' · 등록 ' + ${#temporals.format(header.registeredAt(),'yyyy-MM-dd')}">—</div>
+          <div class="pt-summary"
+               th:with="highRisk=${(header.adherence7d() != null and header.adherence7d() < 50)
+                                  or (header.phq9Severity() != null
+                                      and (header.phq9Severity().name() == 'SEVERE'
+                                           or header.phq9Severity().name() == 'MODERATELY_SEVERE'))},
+                        watchRisk=${!highRisk and ((header.adherence7d() != null and header.adherence7d() < 80)
+                                  or (header.phq9Severity() != null and header.phq9Severity().name() == 'MODERATE'))}">
+            <div class="pt-identity">
+              <span class="pt-avatar-dot" th:text="${#strings.substring(header.name(),0,1)}">김</span>
+              <div class="pt-identity-copy">
+                <div class="pt-name" th:text="${header.name()}">환자명</div>
+                <div class="pt-sub"
+                     th:text="(${header.hospitalName() != null} ? ${header.hospitalName()} : '병원 미연결')
+                             + ' · 등록 ' + ${#temporals.format(header.registeredAt(),'yyyy-MM-dd')}">—</div>
+              </div>
+            </div>
+            <span class="pt-risk-chip"
+                  th:attr="data-tone=${highRisk ? 'danger' : (watchRisk ? 'warn' : 'ok')}"
+                  th:text="${highRisk ? '위험도 - 위험' : (watchRisk ? '위험도 - 주의' : '위험도 - 안정')}">위험도 - 주의</span>
             <div class="pt-stats">
               <div class="pt-stat">
                 <span class="k">처방</span>
@@ -170,7 +195,7 @@
                  target="_blank"
                  style="font-size:11px; font-weight:600; color:#5E6AD2; text-decoration:none;
                         border:1px solid #5E6AD2; padding:3px 8px; border-radius:4px;">
-                🖨️ 처방전
+                처방전
               </a>
             </div>
             <div th:if="${#lists.isEmpty(rx)}" class="rx-empty">활성 처방 없음</div>
@@ -282,6 +307,18 @@
 
           <!-- 차트 -->
           <div class="chart-card">
+            <div class="reference-card-title">
+              <div>
+                <h2>진료 타임라인</h2>
+                <p>최근 30일 환자 기록과 처방 흐름</p>
+              </div>
+              <div class="reference-card-actions">
+                <a th:href="@{'/doctor/patient/' + ${patient.id} + '?mode=chart'}"
+                   th:attr="aria-current=${mode != 'charting'}">환자 정보</a>
+                <a th:href="@{'/doctor/patient/' + ${patient.id} + '?mode=charting'}"
+                   th:attr="aria-current=${mode == 'charting'}">차팅</a>
+              </div>
+            </div>
             <div class="tabs" role="tablist">
               <button class="tab" type="button" data-metric="episode"   aria-selected="true">에피소드</button>
               <button class="tab" type="button" data-metric="adherence" aria-selected="false">복약</button>
@@ -292,6 +329,7 @@
               <button class="tab" type="button" data-metric="overlay"   aria-selected="false">겹침</button>
             </div>
             <div id="metric-summary" class="metric-summary-grid" aria-live="polite"></div>
+            <div id="adherence-visual" class="adherence-visual" hidden></div>
             <div class="chart-meta">
               <span id="chart-title">30일 에피소드</span>
               <span id="chart-range">—</span>
@@ -301,40 +339,71 @@
             <canvas id="metric-chart" height="220"></canvas>
           </div>
 
-          <!-- 치료 이력 타임라인 -->
-          <div th:if="${!#lists.isEmpty(timeline)}" id="timelineSection">
-            <h3 style="font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); margin:0 0 8px;">치료 이력 타임라인</h3>
-            <div class="tl-filters" id="tlFilters">
-              <button type="button" data-kind="mood"     aria-pressed="true">😔 감정</button>
-              <button type="button" data-kind="med"      aria-pressed="true">💊 복약</button>
-              <button type="button" data-kind="exercise" aria-pressed="true">🏃 운동</button>
-              <button type="button" data-kind="soap"     aria-pressed="true">📝 차팅</button>
-              <button type="button" data-kind="phq9"     aria-pressed="true">📊 PHQ-9</button>
-              <button type="button" data-kind="meal"     aria-pressed="false">🍱 식사</button>
-            </div>
-            <ul class="tl-list" id="tlList">
-              <li th:each="e : ${timeline}" class="tl-row" th:attr="data-kind=${e.kind()}">
-                <th:block th:if="${e.kind() == 'mood' and e.emotion() != null}">
-                  <span class="tl-bub"
-                        th:style="'--bub: var(--grad-' + ${e.emotion().slug()} + ');'"
-                        th:text="${e.emotion().emoji()}">😀</span>
-                </th:block>
-                <th:block th:unless="${e.kind() == 'mood' and e.emotion() != null}">
-                  <span class="tl-dot-wrap"><span class="tl-dot"></span></span>
-                </th:block>
-                <span class="tl-when" th:text="${#temporals.format(e.when(),'MM-dd HH:mm')}">·</span>
-                <span class="tl-text">
+          <div class="reference-support-grid">
+            <section class="reference-metric-panel">
+              <div class="reference-panel-head">
+                <h3>상태 지표</h3>
+                <span>최근 7일</span>
+              </div>
+              <div class="reference-vital">
+                <span class="label">7일 운동 합계</span>
+                <strong th:text="${exerciseTotalMin} + '분'">0분</strong>
+              </div>
+              <div class="reference-sparkline" aria-hidden="true">
+                <span th:each="d : ${exerciseSpark}"
+                      th:classappend="${d.minutes() == 0} ? ' is-zero'"
+                      th:style="'height:' + (${exerciseMaxMin > 0 ? d.minutes() * 42 / exerciseMaxMin + 8 : 6}) + 'px;'"></span>
+              </div>
+              <div class="reference-vital-row">
+                <div>
+                  <span class="label">7일 복약률</span>
+                  <strong th:text="${header.adherence7d() == null ? '—' : header.adherence7d() + '%'}">—</strong>
+                </div>
+                <div>
+                  <span class="label">최근 PHQ-9</span>
+                  <strong th:text="${header.phq9Score() == null ? '—' : header.phq9Score()}">—</strong>
+                </div>
+              </div>
+            </section>
+
+            <!-- 치료 이력 타임라인 -->
+            <section th:if="${!#lists.isEmpty(timeline)}" id="timelineSection" class="reference-timeline-panel">
+              <div class="reference-panel-head">
+                <h3>치료 입력 타임라인</h3>
+                <span>전체</span>
+              </div>
+              <div class="tl-filters" id="tlFilters">
+                <button type="button" data-kind="mood"     aria-pressed="true"><span class="filter-dot mood"></span>감정</button>
+                <button type="button" data-kind="med"      aria-pressed="true"><span class="filter-dot med"></span>복약</button>
+                <button type="button" data-kind="exercise" aria-pressed="true"><span class="filter-dot exercise"></span>운동</button>
+                <button type="button" data-kind="soap"     aria-pressed="true"><span class="filter-dot soap"></span>차팅</button>
+                <button type="button" data-kind="phq9"     aria-pressed="true"><span class="filter-dot phq9"></span>PHQ-9</button>
+                <button type="button" data-kind="meal"     aria-pressed="false"><span class="filter-dot meal"></span>식사</button>
+              </div>
+              <ul class="tl-list" id="tlList">
+                <li th:each="e : ${timeline}" class="tl-row" th:attr="data-kind=${e.kind()}">
                   <th:block th:if="${e.kind() == 'mood' and e.emotion() != null}">
-                    <strong th:text="${e.emotion().label()}">기쁨</strong>
-                    <span th:if="${e.journal() != null and !#strings.isEmpty(e.journal())}"
-                          class="tl-journal"
-                          th:text="' — ' + ${#strings.abbreviate(e.journal(), 60)}">—</span>
+                    <span class="tl-bub"
+                          th:style="'--bub: var(--grad-' + ${e.emotion().slug()} + ');'"
+                          th:text="${e.emotion().emoji()}">·</span>
                   </th:block>
-                  <th:block th:unless="${e.kind() == 'mood' and e.emotion() != null}"
-                            th:text="${e.text()}">·</th:block>
-                </span>
-              </li>
-            </ul>
+                  <th:block th:unless="${e.kind() == 'mood' and e.emotion() != null}">
+                    <span class="tl-dot-wrap"><span class="tl-dot"></span></span>
+                  </th:block>
+                  <span class="tl-text">
+                    <th:block th:if="${e.kind() == 'mood' and e.emotion() != null}">
+                      <strong th:text="${e.emotion().label()}">기쁨</strong>
+                      <span th:if="${e.journal() != null and !#strings.isEmpty(e.journal())}"
+                            class="tl-journal"
+                            th:text="' — ' + ${#strings.abbreviate(e.journal(), 60)}">—</span>
+                    </th:block>
+                    <th:block th:unless="${e.kind() == 'mood' and e.emotion() != null}"
+                              th:text="${e.text()}">·</th:block>
+                  </span>
+                  <span class="tl-when" th:text="${#temporals.format(e.when(),'MM-dd HH:mm')}">·</span>
+                </li>
+              </ul>
+            </section>
           </div>
 
           <!-- 과거 차팅 -->
@@ -407,7 +476,7 @@
               <h3>처방</h3>
               <a th:if="${not #lists.isEmpty(rx)}"
                  th:href="@{'/doctor/patient/' + ${patient.id} + '/prescription-print'}"
-                 target="_blank" class="rx-print-btn">🖨️ 처방전 발행</a>
+                 target="_blank" class="rx-print-btn">처방전 발행</a>
             </div>
             <ul class="rx-list" th:if="${not #lists.isEmpty(rx)}">
               <li th:each="p : ${rx}" class="rx-item"
@@ -466,7 +535,7 @@
                       placeholder="예) 우울감 심함, 약 거부 빈번, 식욕저하, 다음 진료 시 sertraline 50mg 시작 검토"></textarea>
             <div class="charting-summary-actions">
               <button type="button" id="ptLlmBtn" class="btn btn-secondary">
-                <span class="btn-text">✨ AI로 SOAP 정리</span>
+                <span class="btn-text">AI로 SOAP 정리</span>
                 <span class="btn-spin" hidden>… 생성 중</span>
               </button>
               <span id="ptLlmStatus" class="pt-llm-status"></span>
@@ -661,6 +730,24 @@
       return arr.reduce((acc, value) => acc + value, 0) / arr.length;
     }
 
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, (ch) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+      })[ch]);
+    }
+
+    function slotLabel(slot) {
+      return ({
+        morning: '아침',
+        noon: '점심',
+        evening: '저녁',
+      })[slot] || slot;
+    }
+
     function phqSeverity(score) {
       if (!Number.isFinite(score)) return '검사 기록 없음';
       if (score >= 20) return '중증';
@@ -742,6 +829,69 @@
       `).join('');
     }
 
+    function renderAdherenceVisual(host) {
+      if (!payload || !host) return;
+      const labels = payload.labels || [];
+      const expectedPerDay = Math.max(0, Number(payload.expectedPerDay || 0));
+      const takenByDay = payload.medicationTaken || [];
+      const missedByDay = payload.medicationMissed || [];
+      const totalTaken = total(takenByDay);
+      const totalMissed = total(missedByDay);
+      const totalExpected = expectedPerDay * labels.length;
+      const adherenceRate = totalExpected > 0 ? Math.round(totalTaken * 100 / totalExpected) : null;
+      const lifecycles = payload.prescriptionLifecycles || [];
+      const medTitle = lifecycles.length === 0
+        ? '활성 처방 없음'
+        : lifecycles.length === 1
+          ? lifecycles[0].name
+          : `활성 처방 ${lifecycles.length}개`;
+      const slots = [...new Set(lifecycles.flatMap(rx => rx.slots || []))]
+        .map(slotLabel)
+        .filter(Boolean);
+
+      const pills = [];
+      labels.forEach((label, dayIndex) => {
+        const taken = Math.max(0, Number(takenByDay[dayIndex] || 0));
+        const missed = Math.max(0, Number(missedByDay[dayIndex] || 0));
+        const expected = expectedPerDay || Math.max(taken + missed, 0);
+        for (let slotIndex = 0; slotIndex < expected; slotIndex += 1) {
+          const status = slotIndex < taken
+            ? 'taken'
+            : slotIndex < taken + missed
+              ? 'missed'
+              : 'planned';
+          pills.push({ label, slotIndex, status });
+        }
+      });
+
+      const pillHtml = pills.length > 0
+        ? pills.map(p => `
+            <span class="med-dose-pill"
+                  data-status="${p.status}"
+                  title="${escapeHtml(p.label)} · ${p.slotIndex + 1}번째 복약"></span>
+          `).join('')
+        : '<div class="med-dose-empty">최근 30일 복약 목표가 없습니다.</div>';
+
+      host.innerHTML = `
+        <div class="med-dose-head">
+          <div>
+            <strong>${escapeHtml(medTitle)}</strong>
+            <span>${slots.length ? slots.map(escapeHtml).map(s => `<em>${s}</em>`).join('') : '<em>복약 일정 없음</em>'}</span>
+          </div>
+          <p>${adherenceRate == null ? '목표 없음' : `누적 복약 ${totalTaken} / ${totalExpected}회 (${adherenceRate}%)`}</p>
+        </div>
+        <div class="med-dose-track" aria-label="최근 30일 복약 캡슐 시각화">
+          ${pillHtml}
+        </div>
+        <div class="med-dose-legend">
+          <span><i data-status="taken"></i>복용</span>
+          <span><i data-status="missed"></i>미복용 기록</span>
+          <span><i data-status="planned"></i>목표/예정</span>
+          <small>${totalMissed > 0 ? `미복용 기록 ${totalMissed}회` : '미복용 기록 없음'}</small>
+        </div>
+      `;
+    }
+
     function renderEpisodeRx(host) {
       if (!payload || !host) return;
       const lifecycles = payload.prescriptionLifecycles || [];
@@ -805,6 +955,17 @@
         overlay:   '복약 vs 기분 vs 운동',
       })[metric];
       renderMetricSummary(metric);
+
+      const adherenceVisual = document.getElementById('adherence-visual');
+      if (adherenceVisual) {
+        if (metric === 'adherence') {
+          renderAdherenceVisual(adherenceVisual);
+          adherenceVisual.hidden = false;
+        } else {
+          adherenceVisual.hidden = true;
+          adherenceVisual.innerHTML = '';
+        }
+      }
 
       // 처방 lifecycle row는 에피소드 탭에서만
       const rxRow = document.getElementById('episode-rx');
@@ -1018,8 +1179,12 @@
         if (meds.length < 2) { lastRisks = []; render([]); return; }
         const fd = new FormData();
         meds.forEach(m => fd.append('med', m));
+        const csrfMeta = document.querySelector('meta[name="_csrf"]');
+        const csrfHdr = document.querySelector('meta[name="_csrf_header"]');
+        const headers = {};
+        if (csrfMeta && csrfHdr) headers[csrfHdr.content] = csrfMeta.content;
         try {
-          const r = await fetch('/doctor/drug-check', { method: 'POST', body: fd });
+          const r = await fetch('/doctor/drug-check', { method: 'POST', headers, body: fd });
           if (!r.ok) throw new Error(r.status);
           lastRisks = await r.json();
           render(lastRisks);

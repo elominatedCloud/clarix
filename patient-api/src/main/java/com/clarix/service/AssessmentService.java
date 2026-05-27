@@ -44,6 +44,7 @@ public class AssessmentService {
 
     @Transactional
     public Assessment submit(User patient, Map<String, Integer> answers) {
+        // PHQ-9은 9개 문항 점수 합계로 중증도를 계산합니다.
         int total = answers.values().stream().mapToInt(Integer::intValue).sum();
         Severity sev = Severity.fromScore(total);
         Assessment a = new Assessment();

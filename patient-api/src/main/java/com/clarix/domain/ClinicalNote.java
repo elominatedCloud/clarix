@@ -23,6 +23,10 @@ public class ClinicalNote {
     @JoinColumn(name = "doctor_id")
     private User doctor;
 
+    /**
+     * SOAP의 대상 환자입니다.
+     * author 필드명이 doctor로 되어 있지만, 현재는 간호사/의료기사 노트 작성자도 이 필드를 재사용합니다.
+     */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "patient_id")
     private User patient;

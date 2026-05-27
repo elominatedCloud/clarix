@@ -4,12 +4,14 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.clarix.dto.MemoForm;
 import com.clarix.domain.Role;
@@ -18,6 +20,7 @@ import com.clarix.service.CurrentUser;
 import com.clarix.service.ReceptionService;
 
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 
 @Controller
 @RequestMapping("/reception")
@@ -45,10 +48,13 @@ public class ReceptionController {
 
     @PostMapping("/patient/{id}/memo")
     public String updateMemo(@PathVariable UUID id,
-                             @ModelAttribute MemoForm form,
-                             HttpSession session) {
+                             @Valid @ModelAttribute MemoForm form,
+                             BindingResult errors,
+                             HttpSession session,
+                             RedirectAttributes redirect) {
         User me = current.requireRole(session, Role.RECEPTIONIST);
         if (me.getHospital() == null) return "redirect:/reception/";
+        if (errors.hasErrors()) return ValidationFeedback.redirect("/reception/", errors, redirect);
         receptionSvc.updateMemo(me.getHospital().getId(), id, form.getMemo());
         return "redirect:/reception/";
     }

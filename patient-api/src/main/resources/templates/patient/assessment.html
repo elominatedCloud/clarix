@@ -75,6 +75,11 @@
       <span>지난 <strong>2주</strong> 동안 다음 문제로 얼마나 자주 방해를 받았나요? 솔직히 선택해주세요 (PHQ-9).</span>
     </div>
 
+    <div th:if="${formError}" class="alert-banner warn" style="margin-bottom:16px;">
+      <span class="icon">!</span>
+      <div class="body"><strong th:text="${formError}">입력값을 확인하세요</strong></div>
+    </div>
+
     <form th:action="@{/patient/assessment}" method="post">
       <input type="hidden" name="onboarding" th:value="${isOnboarding} ? '1' : '0'" />
 

@@ -4,12 +4,14 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.clarix.dto.AdminUserForm;
 import com.clarix.dto.HospitalForm;
@@ -19,6 +21,7 @@ import com.clarix.service.AdminService;
 import com.clarix.service.CurrentUser;
 
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 
 @Controller
 @RequestMapping("/admin")
@@ -52,9 +55,12 @@ public class AdminController {
     }
 
     @PostMapping("/hospital")
-    public String createHospital(@ModelAttribute HospitalForm form,
-                                 HttpSession session) {
+    public String createHospital(@Valid @ModelAttribute HospitalForm form,
+                                 BindingResult errors,
+                                 HttpSession session,
+                                 RedirectAttributes redirect) {
         current.requireRole(session, Role.ADMIN);
+        if (errors.hasErrors()) return ValidationFeedback.redirect("/admin/", errors, redirect);
         adminSvc.createHospital(form.getName(), form.getAddress(), form.getSpecialty(), form.isPartnered());
         return "redirect:/admin/";
     }
@@ -80,12 +86,15 @@ public class AdminController {
 
     @PostMapping("/users/{id}")
     public String updateUser(@PathVariable UUID id,
-                             @ModelAttribute AdminUserForm form,
-                             HttpSession session) {
+                             @Valid @ModelAttribute AdminUserForm form,
+                             BindingResult errors,
+                             HttpSession session,
+                             RedirectAttributes redirect) {
         current.requireRole(session, Role.ADMIN);
+        if (errors.hasErrors()) return ValidationFeedback.redirect("/admin/users", errors, redirect);
         UUID hid = (form.getHospitalId() == null || form.getHospitalId().isBlank())
             ? null : UUID.fromString(form.getHospitalId());
-        adminSvc.updateUser(id, Role.valueOf(form.getRole()), hid);
+        adminSvc.updateUser(id, form.getRole(), hid);
         return "redirect:/admin/users";
     }
 }

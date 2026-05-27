@@ -26,9 +26,11 @@ public class AuthService {
 
     @Transactional
     public User signup(String email, String rawPassword, String name, Role role) {
+        // DTO 검증이 1차 방어선이고, Service 검증은 다른 호출 경로까지 보호하는 2차 방어선입니다.
         if (email == null || email.isBlank()) throw badRequest("이메일을 입력하세요");
         if (rawPassword == null || rawPassword.length() < 6) throw badRequest("비밀번호는 6자 이상");
         if (name == null || name.isBlank()) throw badRequest("이름을 입력하세요");
+        // 이메일은 대소문자 차이로 중복 가입되지 않게 normalize합니다.
         String normalized = email.trim().toLowerCase();
         if (users.existsByEmail(normalized)) throw badRequest("이미 가입된 이메일입니다");
 
@@ -42,6 +44,7 @@ public class AuthService {
         u.setName(name.trim());
         u.setPasswordHash(hasher.hash(rawPassword));
         if (invite != null) {
+            // staff는 본인이 role/hospital을 고르지 않고, 의사의 초대 정보가 권한의 출처가 됩니다.
             u.setRole(invite.getRole());
             u.setHospital(invite.getHospital());
         } else {
@@ -55,6 +58,7 @@ public class AuthService {
         User saved = users.save(u);
 
         if (invite != null) {
+            // 초대장은 1회성으로 소비 처리해 같은 이메일 초대가 재사용되지 않게 합니다.
             invite.setConsumedAt(java.time.OffsetDateTime.now());
             invites.save(invite);
         }

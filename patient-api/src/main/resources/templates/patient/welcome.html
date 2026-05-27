@@ -67,6 +67,11 @@
       진료를 받을 병원을 선택하면 의료진이 내 기록을 함께 볼 수 있어요.
     </p>
 
+    <div th:if="${formError}" class="alert-banner warn" style="margin-bottom:14px;">
+      <span class="icon">!</span>
+      <div class="body"><strong th:text="${formError}">입력값을 확인하세요</strong></div>
+    </div>
+
     <div class="tab-row">
       <a th:href="@{/patient/welcome(tab='partnered')}" th:classappend="${activeTab == 'partnered'} ? 'active'">내 병원 (연동)</a>
       <a th:href="@{/patient/welcome(tab='nearby')}"    th:classappend="${activeTab == 'nearby'} ? 'active'">내 주위 병원</a>

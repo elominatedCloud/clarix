@@ -8,51 +8,105 @@
   <link rel="stylesheet" th:href="@{/css/tokens.css}" />
   <link rel="stylesheet" th:href="@{/css/patient.css}" />
 </head>
-<body class="patient">
+<body class="patient clarix medication-page">
   <div class="patient-shell">
-    <div class="patient-greeting"><a th:href="@{/patient/}" style="color: var(--text-muted)">← 오늘</a></div>
-    <h1 class="patient-headline">복약 체크</h1>
+    <header class="mobile-patient-topbar">
+      <a th:href="@{/patient/}" class="mobile-back-button" aria-label="오늘 화면으로">‹</a>
+      <a th:href="@{/patient/me}" class="mobile-icon-button" aria-label="마이페이지">
+        <span></span>
+      </a>
+    </header>
 
-    <div class="detail-header">
-      <div class="tile-label" style="--cat-color: #0A84FF">오늘 복용량</div>
-      <div class="stat">
-        <span th:text="${medTaken}">0</span> <span class="denom" th:text="' / ' + ${medTotal}"> / 0</span>
+    <div class="patient-greeting" th:text="${#temporals.format(today,'M월 d일 EEEE')}">5월 27일 수요일</div>
+    <h1 class="patient-headline">복약률을<br/>확인해요.</h1>
+
+    <section class="med-dashboard-card"
+             th:style="'--med-progress:' + (${medTotal > 0 ? medTaken * 100 / medTotal : 0}) + '%;'">
+      <div class="med-progress-ring">
+        <div>
+          <strong th:text="(${medTotal > 0 ? medTaken * 100 / medTotal : 0}) + '%'">63%</strong>
+          <span>오늘 복약률</span>
+        </div>
       </div>
-      <div class="tile-meta" style="margin-top: 8px;"
-           th:text="${medTotal - medTaken &gt; 0} ? (${medTotal - medTaken} + '회 남음 — 슬롯을 탭해서 기록하세요') : '오늘 모두 완료했어요 ✓'">—</div>
-    </div>
+      <div class="med-dashboard-copy">
+        <span class="metric-label">오늘 복용량</span>
+        <strong>
+          <span th:text="${medTaken}">2</span>
+          <small th:text="'/ ' + ${medTotal} + '회'">/ 3회</small>
+        </strong>
+        <p th:text="${medTotal - medTaken &gt; 0} ? (${medTotal - medTaken} + '회가 아직 남았어요') : '오늘 모두 완료했어요'">
+          1회가 아직 남았어요
+        </p>
+      </div>
+    </section>
 
-    <div class="section-title-uppercase">오늘 약 (탭하여 기록)</div>
+    <section class="dose-pill-card">
+      <div class="mobile-section-heading">
+        <h2>오늘 약</h2>
+        <span>복용한 약은 진하게 표시돼요</span>
+      </div>
+      <div class="dose-pill-rail" aria-label="오늘 복약 갯수">
+        <th:block th:each="p : ${rx}">
+          <th:block th:each="slot : ${ {'morning','noon','evening'} }">
+            <span th:if="${p.scheduleSlots().contains(slot)}"
+                  class="dose-visual-pill"
+                  th:classappend="${statusIdx[p.medicationName + '|' + slot] != null and statusIdx[p.medicationName + '|' + slot].name() == 'TAKEN'} ? ' is-taken' : ''"></span>
+          </th:block>
+        </th:block>
+      </div>
+    </section>
 
     <div th:if="${#lists.isEmpty(rx)}" class="empty">
       등록된 약이 없습니다.<br/>
-      <a th:href="@{/patient/onboarding}" style="color:#0A84FF">+ 지금 등록하기</a>
+      <a th:href="@{/patient/onboarding}" style="color:#4D63F6">+ 지금 등록하기</a>
     </div>
 
-    <div th:each="p : ${rx}" class="entry-row" style="background:#fff; padding:16px; border-radius:12px; margin-bottom:8px; border:none; grid-template-columns:1fr auto auto auto;">
-      <div class="name" th:text="${p.medicationName}"></div>
+    <section class="med-mobile-list" aria-label="처방약 목록">
+      <article th:each="p : ${rx}" class="med-mobile-row">
+        <div class="med-mobile-name">
+          <strong th:text="${p.medicationName}">리스템캡슐</strong>
+          <span th:text="${p.daysSupply} + '일분'">30일분</span>
+        </div>
 
-      <th:block th:each="slot : ${ {'morning','noon','evening'} }">
-        <th:block th:if="${p.scheduleSlots().contains(slot)}">
-          <form th:action="@{/patient/medication/toggle}" method="post" style="display:inline">
-            <input type="hidden" name="medicationName" th:value="${p.medicationName}" />
-            <input type="hidden" name="slot" th:value="${slot}" />
-            <input type="hidden" name="status"
-                   th:value="${statusIdx[p.medicationName + '|' + slot] != null and statusIdx[p.medicationName + '|' + slot].name() == 'TAKEN'} ? 'MISSED' : 'TAKEN'" />
-            <button type="submit" class="slot"
-                    th:attr="data-state=${statusIdx[p.medicationName + '|' + slot] != null ? statusIdx[p.medicationName + '|' + slot].name().toLowerCase() : null}"
-                    th:text="${slot == 'morning'} ? '아침' : (${slot == 'noon'} ? '점심' : '저녁')">아침</button>
-          </form>
-        </th:block>
-        <th:block th:unless="${p.scheduleSlots().contains(slot)}">
-          <div style="width:44px"></div>
-        </th:block>
-      </th:block>
-    </div>
+        <div class="med-slot-grid">
+          <th:block th:each="slot : ${ {'morning','noon','evening'} }">
+            <th:block th:if="${p.scheduleSlots().contains(slot)}">
+              <form th:action="@{/patient/medication/toggle}" method="post">
+                <input type="hidden" name="medicationName" th:value="${p.medicationName}" />
+                <input type="hidden" name="slot" th:value="${slot}" />
+                <input type="hidden" name="status"
+                       th:value="${statusIdx[p.medicationName + '|' + slot] != null and statusIdx[p.medicationName + '|' + slot].name() == 'TAKEN'} ? 'MISSED' : 'TAKEN'" />
+                <button type="submit" class="slot"
+                        th:attr="data-state=${statusIdx[p.medicationName + '|' + slot] != null ? statusIdx[p.medicationName + '|' + slot].name().toLowerCase() : null}"
+                        th:text="${slot == 'morning'} ? '아침' : (${slot == 'noon'} ? '점심' : '저녁')">아침</button>
+              </form>
+            </th:block>
+            <th:block th:unless="${p.scheduleSlots().contains(slot)}">
+              <span class="slot slot-empty" th:text="${slot == 'morning'} ? '아침' : (${slot == 'noon'} ? '점심' : '저녁')">아침</span>
+            </th:block>
+          </th:block>
+        </div>
+      </article>
+    </section>
 
-    <div style="margin-top: 24px;">
-      <a th:href="@{/patient/onboarding}" class="btn btn-ghost">+ 약 등록 / 수정</a>
+    <div class="mobile-outline-action">
+      <a th:href="@{/patient/onboarding}" class="btn-clarix btn-clarix-ghost">약 등록 / 수정</a>
     </div>
   </div>
+
+  <nav class="clarix-tabbar">
+    <a th:href="@{/patient/}">
+      <span class="dot">🏠</span><span>홈</span>
+    </a>
+    <a th:href="@{/patient/calendar}">
+      <span class="dot">📅</span><span>캘린더</span>
+    </a>
+    <a th:href="@{/patient/medication}" aria-current="page">
+      <span class="dot">💊</span><span>복약</span>
+    </a>
+    <a th:href="@{/patient/me}">
+      <span class="dot">👤</span><span>마이페이지</span>
+    </a>
+  </nav>
 </body>
 </html>

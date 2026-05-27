@@ -6,6 +6,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,6 +20,7 @@ import com.clarix.service.CurrentUser;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 
 @Controller
 public class HomeController {
@@ -33,6 +35,7 @@ public class HomeController {
 
     @GetMapping("/")
     public String landing(HttpSession session) {
+        // 이미 로그인한 사용자가 랜딩/로그인으로 돌아오면 역할별 홈으로 보내 UX를 단순화합니다.
         if (current.isLoggedIn(session)) {
             User u = current.require(session);
             return switch (u.getRole()) {
@@ -54,7 +57,8 @@ public class HomeController {
     public String loginForm(@RequestParam(required = false) String role,
                              @RequestParam(required = false) Integer error,
                              Model model) {
-        model.addAttribute("role", role);
+        String normalizedRole = "doctor".equalsIgnoreCase(role) ? "doctor" : "patient";
+        model.addAttribute("role", normalizedRole);
         if (error != null) model.addAttribute("error", "이메일 또는 비밀번호가 일치하지 않습니다");
         return "auth/login";
     }
@@ -66,8 +70,13 @@ public class HomeController {
     }
 
     @PostMapping("/auth/signup")
-    public String signup(@ModelAttribute SignupForm form,
+    public String signup(@Valid @ModelAttribute SignupForm form,
+                         BindingResult errors,
                          HttpServletRequest request, Model model) {
+        // @Valid 결과는 BindingResult에 담깁니다. errors 매개변수는 검증 대상 바로 뒤에 와야 합니다.
+        if (errors.hasErrors()) {
+            return signupError(form, model, firstError(errors));
+        }
         try {
             Role r = "doctor".equalsIgnoreCase(form.getRole()) ? Role.DOCTOR : Role.PATIENT;
             User u = auth.signup(form.getEmail(), form.getPassword(), form.getName(), r);
@@ -86,11 +95,20 @@ public class HomeController {
                 case ADMIN -> "redirect:/admin/";
             };
         } catch (org.springframework.web.server.ResponseStatusException e) {
-            model.addAttribute("error", e.getReason());
-            model.addAttribute("role", form.getRole());
-            model.addAttribute("name", form.getName());
-            model.addAttribute("email", form.getEmail());
-            return "auth/signup";
+            return signupError(form, model, e.getReason());
         }
+    }
+
+    private String signupError(SignupForm form, Model model, String message) {
+        model.addAttribute("error", message);
+        model.addAttribute("role", "doctor".equalsIgnoreCase(form.getRole()) ? "doctor" : "patient");
+        model.addAttribute("name", form.getName());
+        model.addAttribute("email", form.getEmail());
+        return "auth/signup";
+    }
+
+    private String firstError(BindingResult errors) {
+        var field = errors.getFieldError();
+        return field != null ? field.getDefaultMessage() : "입력값을 확인하세요";
     }
 }

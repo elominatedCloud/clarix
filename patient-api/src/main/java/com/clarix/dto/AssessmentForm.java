@@ -3,6 +3,9 @@ package com.clarix.dto;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 /**
@@ -11,14 +14,32 @@ import lombok.Data;
  */
 @Data
 public class AssessmentForm {
+    @NotNull(message = "1번 문항을 선택하세요")
+    @Min(0) @Max(3)
     private Integer q1;
+    @NotNull(message = "2번 문항을 선택하세요")
+    @Min(0) @Max(3)
     private Integer q2;
+    @NotNull(message = "3번 문항을 선택하세요")
+    @Min(0) @Max(3)
     private Integer q3;
+    @NotNull(message = "4번 문항을 선택하세요")
+    @Min(0) @Max(3)
     private Integer q4;
+    @NotNull(message = "5번 문항을 선택하세요")
+    @Min(0) @Max(3)
     private Integer q5;
+    @NotNull(message = "6번 문항을 선택하세요")
+    @Min(0) @Max(3)
     private Integer q6;
+    @NotNull(message = "7번 문항을 선택하세요")
+    @Min(0) @Max(3)
     private Integer q7;
+    @NotNull(message = "8번 문항을 선택하세요")
+    @Min(0) @Max(3)
     private Integer q8;
+    @NotNull(message = "9번 문항을 선택하세요")
+    @Min(0) @Max(3)
     private Integer q9;
     private String onboarding;
 

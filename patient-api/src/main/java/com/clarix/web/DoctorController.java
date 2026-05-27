@@ -4,12 +4,14 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.clarix.dto.MemoForm;
 import com.clarix.dto.PrescriptionForm;
@@ -25,6 +27,7 @@ import com.clarix.service.NoteService;
 import com.clarix.service.PatientService;
 
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 
 @Controller
 @RequestMapping("/doctor")
@@ -51,6 +54,8 @@ public class DoctorController {
     public String index(@RequestParam(defaultValue = "all") String view,
                         @RequestParam(defaultValue = "") String q,
                         HttpSession session, Model model) {
+        // MVC Controller는 화면 렌더링을 위한 Model 조립을 담당합니다.
+        // 환자별 위험도 계산 자체는 DoctorService.patientsForDoctor가 맡습니다.
         User me = current.requireRole(session, Role.DOCTOR);
         if (me.getHospital() == null) return "redirect:/doctor/welcome";
         var allRows = doctorSvc.patientsForDoctor(me.getId(), 7);
@@ -103,6 +108,7 @@ public class DoctorController {
                                 @RequestParam(defaultValue = "chart") String mode,
                                 HttpSession session, Model model) {
         User me = current.requireRole(session, Role.DOCTOR);
+        // URL path의 id는 신뢰하지 않고, Service에서 공유 권한을 확인한 뒤 환자를 가져옵니다.
         User patient = doctorSvc.requireSharedPatient(me.getId(), id);
         doctorSvc.timeline(me.getId(), id, 7);
         model.addAttribute("me", me);
@@ -141,9 +147,12 @@ public class DoctorController {
 
     @PostMapping("/patient/{id}/soap")
     public String addSoap(@PathVariable UUID id,
-                          @ModelAttribute SoapNoteForm form,
-                          HttpSession session) {
+                          @Valid @ModelAttribute SoapNoteForm form,
+                          BindingResult errors,
+                          HttpSession session,
+                          RedirectAttributes redirect) {
         User me = current.requireRole(session, Role.DOCTOR);
+        if (errors.hasErrors()) return ValidationFeedback.redirect("/doctor/patient/" + id, errors, redirect);
         doctorSvc.createSoap(me, id, form.getSubjective(), form.getObjective(),
             form.getAssessment(), form.getPlan());
         return "redirect:/doctor/patient/" + id;
@@ -151,12 +160,13 @@ public class DoctorController {
 
     @PostMapping("/patient/{id}/prescription")
     public String addPrescription(@PathVariable UUID id,
-                                  @ModelAttribute PrescriptionForm form,
-                                  HttpSession session) {
+                                  @Valid @ModelAttribute PrescriptionForm form,
+                                  BindingResult errors,
+                                  HttpSession session,
+                                  RedirectAttributes redirect) {
         User me = current.requireRole(session, Role.DOCTOR);
-        if (form.getMedicationName() == null || form.getMedicationName().isBlank()
-                || form.getSlots() == null || form.getSlots().isEmpty()) {
-            return "redirect:/doctor/patient/" + id;
+        if (errors.hasErrors()) {
+            return ValidationFeedback.redirect("/doctor/patient/" + id, errors, redirect);
         }
         doctorSvc.addPrescriptionFor(me, id, form.getMedicationName().trim(), form.getSlots(),
             Math.max(1, form.getDaysSupply()));
@@ -165,9 +175,12 @@ public class DoctorController {
 
     @PostMapping("/patient/{id}/memo")
     public String updateDoctorMemo(@PathVariable UUID id,
-                                   @ModelAttribute MemoForm form,
-                                   HttpSession session) {
+                                   @Valid @ModelAttribute MemoForm form,
+                                   BindingResult errors,
+                                   HttpSession session,
+                                   RedirectAttributes redirect) {
         User me = current.requireRole(session, Role.DOCTOR);
+        if (errors.hasErrors()) return ValidationFeedback.redirect("/doctor/patient/" + id, errors, redirect);
         doctorSvc.updateDoctorMemo(me, id, form.getMemo());
         return "redirect:/doctor/patient/" + id;
     }
@@ -205,9 +218,12 @@ public class DoctorController {
 
     @PostMapping("/note/{id}/edit")
     public String saveNoteEdit(@PathVariable UUID id,
-                               @ModelAttribute SoapNoteForm form,
-                               HttpSession session) {
+                               @Valid @ModelAttribute SoapNoteForm form,
+                               BindingResult errors,
+                               HttpSession session,
+                               RedirectAttributes redirect) {
         User me = current.requireRole(session, Role.DOCTOR);
+        if (errors.hasErrors()) return ValidationFeedback.redirect("/doctor/note/" + id + "/edit", errors, redirect);
         var n = noteSvc.update(me, id, form.getSubjective(), form.getObjective(),
             form.getAssessment(), form.getPlan());
         return "redirect:/doctor/patient/" + n.getPatient().getId();
@@ -230,8 +246,12 @@ public class DoctorController {
     }
 
     @PostMapping("/welcome")
-    public String pickHospital(@ModelAttribute HospitalPickForm form, HttpSession session) {
+    public String pickHospital(@Valid @ModelAttribute HospitalPickForm form,
+                               BindingResult errors,
+                               HttpSession session,
+                               RedirectAttributes redirect) {
         User me = current.requireRole(session, Role.DOCTOR);
+        if (errors.hasErrors()) return ValidationFeedback.redirect("/doctor/welcome", errors, redirect);
         doctorSvc.assignHospital(me, form.getHospitalId());
         return "redirect:/doctor/";
     }
@@ -248,11 +268,14 @@ public class DoctorController {
     }
 
     @PostMapping("/admin/invite")
-    public String createInvite(@ModelAttribute StaffInviteForm form,
-                               HttpSession session, Model model) {
+    public String createInvite(@Valid @ModelAttribute StaffInviteForm form,
+                               BindingResult errors,
+                               HttpSession session, Model model,
+                               RedirectAttributes redirect) {
         User me = current.requireRole(session, Role.DOCTOR);
+        if (errors.hasErrors()) return ValidationFeedback.redirect("/doctor/admin", errors, redirect);
         try {
-            doctorSvc.createInvite(me, form.getEmail(), Role.valueOf(form.getRole()));
+            doctorSvc.createInvite(me, form.getEmail(), form.getRole());
         } catch (org.springframework.web.server.ResponseStatusException ex) {
             // surfaced via flash if needed; for now just redirect
         }

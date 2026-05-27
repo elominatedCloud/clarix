@@ -5,12 +5,14 @@ import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.clarix.dto.SoapNoteForm;
 import com.clarix.domain.Role;
@@ -21,6 +23,7 @@ import com.clarix.service.NoteService;
 import com.clarix.service.StaffService;
 
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 
 @Controller
 @RequestMapping("/staff")
@@ -87,9 +90,12 @@ public class StaffController {
 
     @PostMapping("/note/{id}/edit")
     public String saveNoteEdit(@PathVariable UUID id,
-                               @ModelAttribute SoapNoteForm form,
-                               HttpSession session) {
+                               @Valid @ModelAttribute SoapNoteForm form,
+                               BindingResult errors,
+                               HttpSession session,
+                               RedirectAttributes redirect) {
         User me = requireStaff(session);
+        if (errors.hasErrors()) return ValidationFeedback.redirect("/staff/note/" + id + "/edit", errors, redirect);
         var n = noteSvc.update(me, id, form.getSubjective(), form.getObjective(),
             form.getAssessment(), form.getPlan());
         return "redirect:/staff/patient/" + n.getPatient().getId();
@@ -97,9 +103,12 @@ public class StaffController {
 
     @PostMapping("/patient/{id}/soap")
     public String addSoap(@PathVariable UUID id,
-                          @ModelAttribute SoapNoteForm form,
-                          HttpSession session) {
+                          @Valid @ModelAttribute SoapNoteForm form,
+                          BindingResult errors,
+                          HttpSession session,
+                          RedirectAttributes redirect) {
         User me = requireStaff(session);
+        if (errors.hasErrors()) return ValidationFeedback.redirect("/staff/patient/" + id, errors, redirect);
         staffSvc.createNote(me, id, form.getSubjective(), form.getObjective(),
             form.getAssessment(), form.getPlan());
         return "redirect:/staff/patient/" + id;

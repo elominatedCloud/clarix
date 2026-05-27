@@ -48,6 +48,7 @@ public class ReceptionService {
     }
 
     public List<ReceptionRow> patientsForHospital(UUID hospitalId) {
+        // 데스크 화면은 "처방 종료가 임박했는데 아직 예약 안 된 환자"를 위로 올리는 업무용 목록입니다.
         var patients = users.findByHospitalIdAndRole(hospitalId, Role.PATIENT);
         return patients.stream().map(p -> new ReceptionRow(
                 p.getId(),
