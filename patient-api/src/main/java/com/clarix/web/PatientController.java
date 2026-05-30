@@ -221,6 +221,15 @@ public class PatientController {
         }
         model.addAttribute("yesterdayMissed", yesterdayMissed);
         model.addAttribute("dosageFeedbackPending", feedbackPending);
+        // 데스크 직원이 진료 일정을 오늘 날짜로 잡았는지 환자 메인에 즉시 노출.
+        boolean bookedToday = false;
+        if (me.getBookedAt() != null) {
+            java.time.LocalDate bookedDate = me.getBookedAt()
+                .atZoneSameInstant(java.time.ZoneId.of("Asia/Seoul"))
+                .toLocalDate();
+            bookedToday = bookedDate.equals(LocalDate.now());
+        }
+        model.addAttribute("bookedToday", bookedToday);
 
         // ============== Wizard nextStep 계산 ==============
         // 우선순위: 어제 미복용 → 지금 시간대 약 → 용량 피드백 → 감정 → 식사 → 운동 → 완료

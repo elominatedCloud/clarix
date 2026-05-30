@@ -79,10 +79,18 @@ public class ReceptionController {
     }
 
     @PostMapping("/request/{id}/scheduled")
-    public String markRequestScheduled(@PathVariable UUID id, HttpSession session) {
+    public String markRequestScheduled(@PathVariable UUID id,
+                                       @Valid @ModelAttribute AppointmentForm form,
+                                       BindingResult errors,
+                                       HttpSession session,
+                                       RedirectAttributes redirect) {
         User me = current.requireRole(session, Role.RECEPTIONIST);
         if (me.getHospital() == null) return "redirect:/reception/";
-        careRequestSvc.markScheduled(me.getHospital().getId(), id);
+        if (errors.hasErrors() || form.getAppointmentAt() == null) {
+            redirect.addFlashAttribute("formError", "예약 시간을 입력하세요");
+            return "redirect:/reception/";
+        }
+        careRequestSvc.markScheduled(me.getHospital().getId(), id, form.getAppointmentAt());
         return "redirect:/reception/";
     }
 

@@ -115,6 +115,33 @@ public class DoctorService {
         }
     }
 
+    /** 의사 메인 화면용: 오늘 데스크에서 잡아준 예약 환자만 시간순으로 정렬. */
+    public List<TodayBooked> todayBookedFor(UUID doctorId) {
+        List<Permission> perms = permissions.findByDoctorIdAndActiveTrue(doctorId);
+        if (perms.isEmpty()) return List.of();
+        ZoneId zone = ZoneId.of("Asia/Seoul");
+        LocalDate today = LocalDate.now();
+        List<TodayBooked> out = new ArrayList<>();
+        for (Permission perm : perms) {
+            User patient = perm.getPatient();
+            OffsetDateTime booked = patient.getBookedAt();
+            if (booked == null) continue;
+            LocalDate bookedDate = booked.atZoneSameInstant(zone).toLocalDate();
+            if (!bookedDate.equals(today)) continue;
+            out.add(new TodayBooked(patient.getId(), patient.getName(), booked));
+        }
+        out.sort((a, b) -> a.bookedAt().compareTo(b.bookedAt()));
+        return out;
+    }
+
+    public record TodayBooked(UUID id, String name, OffsetDateTime bookedAt) {
+        private static final java.time.format.DateTimeFormatter TIME_FMT =
+            java.time.format.DateTimeFormatter.ofPattern("HH:mm");
+        public String timeLabel() {
+            return bookedAt.atZoneSameInstant(ZoneId.of("Asia/Seoul")).format(TIME_FMT);
+        }
+    }
+
     public List<PatientRow> patientsForDoctor(UUID doctorId, int days) {
         // 대시보드 리스트는 여러 테이블의 최근 데이터를 모아 환자별 요약 row를 만듭니다.
         // Controller에서 계산하지 않고 Service에서 만들면 의사 화면/API가 같은 규칙을 재사용할 수 있습니다.

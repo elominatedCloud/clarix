@@ -1,6 +1,8 @@
 package com.clarix.service;
 
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -14,14 +16,19 @@ import com.clarix.domain.CareRequest;
 import com.clarix.domain.CareRequestStatus;
 import com.clarix.domain.User;
 import com.clarix.repo.CareRequestRepository;
+import com.clarix.repo.UserRepository;
 
 @Service
 public class CareRequestService {
 
-    private final CareRequestRepository requests;
+    private static final ZoneId CLINIC_ZONE = ZoneId.of("Asia/Seoul");
 
-    public CareRequestService(CareRequestRepository requests) {
+    private final CareRequestRepository requests;
+    private final UserRepository users;
+
+    public CareRequestService(CareRequestRepository requests, UserRepository users) {
         this.requests = requests;
+        this.users = users;
     }
 
     public List<CareRequest> pendingForHospital(UUID hospitalId) {
@@ -58,14 +65,20 @@ public class CareRequestService {
     }
 
     @Transactional
-    public void markScheduled(UUID staffHospitalId, UUID requestId) {
+    public void markScheduled(UUID staffHospitalId, UUID requestId, LocalDateTime appointmentAt) {
         CareRequest request = requests.findById(requestId).orElseThrow();
         if (!request.getHospital().getId().equals(staffHospitalId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "다른 병원의 진료 요청입니다");
         }
+        if (appointmentAt == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "예약 시간을 입력하세요");
+        }
         request.setStatus(CareRequestStatus.SCHEDULED);
         request.setHandledAt(OffsetDateTime.now());
         requests.save(request);
+        User patient = request.getPatient();
+        patient.setBookedAt(appointmentAt.atZone(CLINIC_ZONE).toOffsetDateTime());
+        users.save(patient);
     }
 
     private CareRequest requirePatientRequest(UUID patientId, UUID requestId) {

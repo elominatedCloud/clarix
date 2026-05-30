@@ -12,9 +12,42 @@
   <div class="mobile-auth-shell mobile-splash-shell">
     <main class="mobile-splash-copy" aria-labelledby="clarix-title">
       <h1 id="clarix-title">Clarix</h1>
-      <p>From Unclear Signals to<br/>Clinical Clarity.</p>
+      <!-- 타이핑 애니메이션: JS가 한 글자씩 채워 넣고 종료 시 깜빡이는 커서 유지 -->
+      <p class="typewriter" aria-live="polite">
+        <span class="typewriter-text" data-typewriter='["From Unclear Signals to","Clinical Clarity."]' aria-hidden="true"></span>
+        <span class="typewriter-caret" aria-hidden="true"></span>
+        <span class="sr-only">From Unclear Signals to Clinical Clarity.</span>
+      </p>
     </main>
-    <a class="mobile-outline-cta" th:href="@{/auth/login(role='patient')}">Get Start</a>
+    <a class="mobile-outline-cta" th:href="@{/auth/login(role='patient')}">로그인</a>
   </div>
+  <script>
+    // 타이핑 효과: data-typewriter 의 줄 배열을 한 글자씩 출력, 줄 사이는 \n 으로 줄바꿈.
+    (function() {
+      const el = document.querySelector('.typewriter-text');
+      if (!el) return;
+      let lines;
+      try { lines = JSON.parse(el.getAttribute('data-typewriter')); } catch (e) { return; }
+      const speed = 70;  // 글자당 ms
+      const linePause = 280;  // 줄 사이 멈춤
+      let li = 0, ci = 0;
+      function step() {
+        if (li >= lines.length) return;
+        const line = lines[li];
+        if (ci < line.length) {
+          el.textContent += line.charAt(ci++);
+          setTimeout(step, speed);
+        } else {
+          li++;
+          ci = 0;
+          if (li < lines.length) {
+            el.textContent += '\n';
+            setTimeout(step, linePause);
+          }
+        }
+      }
+      step();
+    })();
+  </script>
 </body>
 </html>

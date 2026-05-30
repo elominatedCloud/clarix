@@ -94,7 +94,13 @@
       오늘의 기록을 차근차근 채우면 의료진이 흐름을 더 정확히 볼 수 있어요.
     </div>
 
-    <div th:if="${me.bookedAt != null}" class="mobile-note-pill appointment-pill">
+    <div th:if="${bookedToday}" class="mobile-note-pill appointment-pill appointment-today">
+      <span>오늘 진료가 잡혔어요</span>
+      <strong th:text="${me.bookedAtDisplay()}">5월 30일 14:00</strong>
+      <small th:if="${me.hospital != null}" th:text="${me.hospital.name}">병원명</small>
+    </div>
+
+    <div th:if="${me.bookedAt != null and !bookedToday}" class="mobile-note-pill appointment-pill">
       <span>다음 진료</span>
       <strong th:text="${me.bookedAtDisplay()}">5월 30일 14:00</strong>
       <small th:if="${me.hospital != null}" th:text="${me.hospital.name}">병원명</small>

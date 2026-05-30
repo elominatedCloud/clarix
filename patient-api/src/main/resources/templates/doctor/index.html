@@ -41,28 +41,48 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 20v-1.5a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20"/><circle cx="9.5" cy="7.5" r="3.5"/><path d="M21 20v-1.5a3.5 3.5 0 0 0-2.5-3.35"/><path d="M16.5 4.3a3.5 3.5 0 0 1 0 6.4"/></svg>
           <span>직원 관리</span>
         </a>
-        <a class="rail-link" href="#patientTable" title="분석" aria-label="분석">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3 7 4-14 3 7h4"/></svg>
-          <span>분석</span>
-        </a>
       </nav>
       <div class="rail-tools">
-        <form th:action="@{/auth/logout}" method="post" style="display:inline-flex;">
+        <form th:action="@{/auth/logout}" method="post" class="rail-hide-narrow" style="display:inline-flex;">
           <button type="submit" class="header-icon-btn" title="로그아웃" aria-label="로그아웃">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h4v16h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>
           </button>
         </form>
-        <button type="button" class="header-icon-btn theme-icon-btn" data-theme-icon-btn
+        <button type="button" class="header-icon-btn theme-icon-btn rail-hide-narrow" data-theme-icon-btn
                 title="라이트/다크 전환" aria-label="라이트 다크 전환">
           <!-- 해/달 아이콘 (theme JS가 data-theme 값에 따라 표시 토글) -->
           <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M4.93 19.07l1.41-1.41"/><path d="M17.66 6.34l1.41-1.41"/></svg>
           <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/></svg>
         </button>
-        <a class="doctor-chip" th:href="@{/doctor/admin}"
+        <a class="doctor-chip rail-hide-narrow" th:href="@{/doctor/admin}"
            th:title="${me.name} + ' 의사 · 직원/병원 설정'">
           <span class="avatar" th:text="${#strings.toUpperCase(#strings.substring(me.name,0,1))}">의</span>
           <span class="doctor-chip-name" th:text="${me.name} + ' 의사'">김 의사</span>
         </a>
+        <!-- 좁은 화면: chip 드롭다운으로 로그아웃/테마/직원관리 진입 -->
+        <details class="doctor-chip-menu rail-show-narrow">
+          <summary class="doctor-chip">
+            <span class="avatar" th:text="${#strings.toUpperCase(#strings.substring(me.name,0,1))}">의</span>
+            <span class="doctor-chip-name" th:text="${me.name} + ' 의사'">김 의사</span>
+          </summary>
+          <div class="doctor-chip-panel">
+            <a th:href="@{/doctor/admin}">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
+              직원/병원 설정
+            </a>
+            <button type="button" data-theme-icon-btn>
+              <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M4.93 19.07l1.41-1.41"/><path d="M17.66 6.34l1.41-1.41"/></svg>
+              <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/></svg>
+              <span>라이트/다크 전환</span>
+            </button>
+            <form th:action="@{/auth/logout}" method="post">
+              <button type="submit">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h4v16h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>
+                로그아웃
+              </button>
+            </form>
+          </div>
+        </details>
       </div>
     </aside>
 
@@ -154,6 +174,26 @@
                           th:text="${day >= 1 and day <= dim ? day : ''}"></span>
                   </th:block>
                 </div>
+              </div>
+            </section>
+
+            <!-- 오늘 예약 환자 (데스크가 잡은 예약) -->
+            <section class="figma-card" th:if="${not #lists.isEmpty(todayBookedPatients)}">
+              <h3 class="figma-card-title">오늘 예약 환자</h3>
+              <div class="today-patient-strip">
+                <a th:each="b : ${todayBookedPatients}"
+                   th:href="@{'/doctor/patient/' + ${b.id}}"
+                   class="today-patient-card today-patient-card-booked">
+                  <span class="today-patient-card-avatar"></span>
+                  <div class="today-patient-card-meta">
+                    <strong th:text="${b.name}">김영희</strong>
+                    <small>
+                      <span class="pat-id" th:text="'#PAT-' + ${#strings.substring(b.id.toString(),0,5).toUpperCase()}">#PAT-99210</span>
+                    </small>
+                  </div>
+                  <span class="figma-risk-pill" data-tone="ok"
+                        th:text="${b.timeLabel()} + ' 예약'">14:00 예약</span>
+                </a>
               </div>
             </section>
 

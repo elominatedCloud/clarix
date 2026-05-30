@@ -114,7 +114,7 @@ body.doctor {
 
 /* Topbar */
 .topbar {
-  height: 36px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -207,7 +207,7 @@ body.doctor {
 
 /* Main content area */
 .content {
-  padding: 16px 24px;
+  padding: 10px 24px 16px;
   flex: 1;
   overflow: auto;
 }
@@ -2846,17 +2846,21 @@ body.doctor .doctor-search--bare svg {
     z-index: 40;
   }
   body.doctor.doctor-reference .rail-nav {
-    flex: 1 1 100%;
-    order: 3;
+    flex: 0 1 auto;
+    order: 2;
     justify-content: flex-start;
     overflow-x: auto;
+    gap: 6px;
   }
   body.doctor.doctor-reference .rail-tools {
     margin-left: auto;
-    order: 2;
+    order: 3;
     flex-shrink: 0;
   }
   body.doctor.doctor-reference .sidebar-logo { order: 1; }
+  body.doctor.doctor-reference .sidebar {
+    flex-wrap: nowrap;
+  }
   body.doctor.doctor-reference .rail-link {
     width: 42px; height: 42px;
   }
@@ -2919,6 +2923,140 @@ body.doctor .doctor-search--bare svg {
   body.doctor.doctor-reference .sidebar-logo {
     width: 36px; height: 36px;
   }
+  /* 작은 화면: 로그아웃/테마/이름을 김의사 chip 드롭다운 안으로 접기 */
+  body.doctor .rail-tools .rail-hide-narrow { display: none !important; }
+  body.doctor .rail-tools .rail-show-narrow { display: inline-block; }
+}
+
+/* 모바일 화이트스페이스 제거: doctor-reference 레이아웃에서 상단 padding/min-height 초기화 */
+@media (max-width: 760px) {
+  body.doctor.doctor-reference .doctor-shell {
+    min-height: auto;
+    grid-template-rows: auto 1fr;
+  }
+  body.doctor.doctor-reference .doctor-main {
+    padding-top: 0 !important;
+    min-height: auto;
+  }
+  body.doctor.doctor-reference .sidebar {
+    position: static !important;
+    top: auto !important;
+    height: auto !important;
+  }
+  body.doctor.doctor-reference .content.doctor-index-content {
+    padding: 14px 16px 32px;
+  }
+  body.doctor .page-title-block {
+    margin-top: 0;
+  }
+}
+
+/* 모바일 dense-table: 카드 형태로 스택 (헤더 숨김, 행 = 카드) */
+@media (max-width: 640px) {
+  body.doctor .dense-table {
+    display: block;
+    width: 100%;
+    overflow-x: visible;
+    white-space: normal;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  body.doctor .dense-table thead {
+    display: none;
+  }
+  body.doctor .dense-table tbody,
+  body.doctor .dense-table tr {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    table-layout: auto;
+  }
+  body.doctor .dense-table tr {
+    background: #FFFFFF;
+    border: 1px solid #E5E9F2;
+    border-radius: 12px;
+    padding: 10px 14px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.03);
+  }
+  body.doctor .dense-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 0;
+    border: 0;
+    width: 100%;
+    font-size: 13px;
+  }
+  body.doctor .dense-table td::before {
+    content: attr(data-mobile-label);
+    font-size: 11px;
+    font-weight: 700;
+    color: #64748B;
+    flex-shrink: 0;
+    min-width: 60px;
+  }
+  body.doctor .dense-table td:empty,
+  body.doctor .dense-table td:empty::before { display: none; }
+}
+
+/* 의사 chip 드롭다운 (좁은 화면 전용) */
+body.doctor .rail-tools .rail-show-narrow { display: none; }
+body.doctor .doctor-chip-menu {
+  position: relative;
+}
+body.doctor .doctor-chip-menu > summary {
+  list-style: none;
+  cursor: pointer;
+}
+body.doctor .doctor-chip-menu > summary::-webkit-details-marker { display: none; }
+body.doctor .doctor-chip-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 180px;
+  background: #FFFFFF;
+  border: 1px solid #E5E9F2;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(15,23,42,0.10);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 50;
+}
+body.doctor .doctor-chip-panel a,
+body.doctor .doctor-chip-panel button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0F172A;
+  text-decoration: none;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+body.doctor .doctor-chip-panel a:hover,
+body.doctor .doctor-chip-panel button:hover {
+  background: #F4F6FB;
+}
+body.doctor .doctor-chip-panel form { display: block; }
+body.doctor .doctor-chip-panel svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
 }
 
 /* ---------- Figma page 13 EXACT replication ---------- */

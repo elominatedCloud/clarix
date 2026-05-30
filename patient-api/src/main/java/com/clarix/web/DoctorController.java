@@ -106,6 +106,7 @@ public class DoctorController {
         model.addAttribute("avgAdherence", avgAdherence);
         model.addAttribute("meanPhq9", meanPhq9);
         model.addAttribute("missingMoodCount", missingMoodCount);
+        model.addAttribute("todayBookedPatients", doctorSvc.todayBookedFor(me.getId()));
         return "doctor/index";
     }
 
