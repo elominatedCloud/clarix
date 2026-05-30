@@ -416,13 +416,26 @@ public class DoctorService {
                 org.springframework.http.HttpStatus.BAD_REQUEST,
                 "초대할 수 없는 역할");
         }
+        String normalized = email.trim().toLowerCase();
         StaffInvite inv = new StaffInvite();
-        inv.setEmail(email.trim().toLowerCase());
+        inv.setEmail(normalized);
         inv.setRole(role);
         inv.setHospital(doctor.getHospital());
         inv.setDoctor(doctor);
         inv.setActive(true);
-        return invites.save(inv);
+        StaffInvite saved = invites.save(inv);
+
+        // 선 회원가입 → 후 초대 흐름 보강: 같은 이메일로 이미 가입한 사용자가 있다면
+        // 즉시 역할/병원을 적용하고 초대를 소비 처리합니다.
+        // (기존에는 가입 시점에만 초대를 확인하던 탓에 가입 후 발급된 초대가 연결되지 않았음)
+        users.findByEmail(normalized).ifPresent(existing -> {
+            existing.setRole(role);
+            existing.setHospital(doctor.getHospital());
+            users.save(existing);
+            saved.setConsumedAt(java.time.OffsetDateTime.now());
+            invites.save(saved);
+        });
+        return saved;
     }
 
     @Transactional
