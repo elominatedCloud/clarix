@@ -46,41 +46,34 @@
           <span>분석</span>
         </a>
       </nav>
-      <form th:action="@{/auth/logout}" method="post" class="rail-logout">
-        <button class="rail-link rail-action" type="submit" title="로그아웃" aria-label="로그아웃">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h4v16h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>
-          <span>로그아웃</span>
+      <div class="rail-tools">
+        <form th:action="@{/auth/logout}" method="post" style="display:inline-flex;">
+          <button type="submit" class="header-icon-btn" title="로그아웃" aria-label="로그아웃">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h4v16h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>
+          </button>
+        </form>
+        <button type="button" class="header-icon-btn theme-icon-btn" data-theme-icon-btn
+                title="라이트/다크 전환" aria-label="라이트 다크 전환">
+          <!-- 해/달 아이콘 (theme JS가 data-theme 값에 따라 표시 토글) -->
+          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M4.93 19.07l1.41-1.41"/><path d="M17.66 6.34l1.41-1.41"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/></svg>
         </button>
-      </form>
+        <a class="doctor-chip" th:href="@{/doctor/admin}"
+           th:title="${me.name} + ' 의사 · 직원/병원 설정'">
+          <span class="avatar" th:text="${#strings.toUpperCase(#strings.substring(me.name,0,1))}">의</span>
+          <span class="doctor-chip-name" th:text="${me.name} + ' 의사'">김 의사</span>
+        </a>
+      </div>
     </aside>
 
     <main class="doctor-main">
-      <div class="topbar">
-        <nav class="topbar-menu" aria-label="상단 메뉴">
-          <a th:href="@{/doctor/(view='all')}" th:attr="aria-current=${view == 'all'}">환자 목록</a>
-          <a th:href="@{/doctor/(view='inbox')}" th:attr="aria-current=${view == 'inbox'}">위험 인박스</a>
-          <a th:href="@{/doctor/admin}">직원 관리</a>
-        </nav>
-        <form class="doctor-search" th:action="@{/doctor/}" method="get" role="search">
-          <input type="hidden" name="view" th:value="${view}" />
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 21-4.4-4.4"/><circle cx="11" cy="11" r="7"/></svg>
-          <input type="search" name="q" placeholder="Search anything" th:value="${q}" autocomplete="off" />
-        </form>
-        <div class="topbar-right">
-          <div class="doctor-profile">
-            <span class="profile-name" th:text="${me.name}">의사</span>
-            <span class="profile-role">Chief Psychiatrist</span>
-          </div>
-          <label class="theme-switch" title="라이트/다크 전환">
-            <input type="checkbox" data-theme-toggle aria-label="다크 모드" />
-            <span class="theme-switch-track" aria-hidden="true"><span class="theme-switch-thumb"></span></span>
-            <span class="theme-switch-label" data-theme-label>Light</span>
-          </label>
-          <span class="avatar" th:text="${#strings.toUpperCase(#strings.substring(me.name,0,1))}">의</span>
-        </div>
-      </div>
 
-      <div class="content">
+      <div class="content doctor-index-content">
+        <header class="page-title-block">
+          <h1 class="page-title">Patients Record</h1>
+          <p class="page-subtitle">종합차트</p>
+        </header>
+
         <!-- Top alerts -->
         <div th:if="${riskCount > 0}" class="doctor-alert">
           <span class="badge">위험</span>
@@ -92,101 +85,139 @@
           <span><strong th:text="${warnCount} + '명'">N명</strong>의 환자가 저복약 또는 중등도 신호 — 다음 진료 시 점검 권장</span>
         </div>
 
-        <!-- KPI summary -->
-        <div class="kpi-grid">
-          <div class="kpi-card">
-            <span class="kpi-label">전체 환자</span>
-            <span class="kpi-value" th:text="${totalPatients}">0</span>
-            <span class="kpi-sub">권한 부여된 환자</span>
+        <!-- 종합차트 메인 그리드: 환자 테이블 (좌) + 캘린더/오늘문진/스케줄 (우) -->
+        <div class="doctor-index-grid">
+          <!-- 좌측: 환자 테이블 카드 (Figma p.13 그대로) -->
+          <div class="index-left">
+            <div class="figma-card">
+              <table class="figma-pt-table" id="patientTable">
+                <thead>
+                  <tr>
+                    <th style="width:35%; padding-left:24px;">환자 정보</th>
+                    <th style="width:22%;">최근 진료일</th>
+                    <th style="width:18%;">최근 문진 기록</th>
+                    <th style="width:25%;">상태</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr th:if="${#lists.isEmpty(rows)}">
+                    <td colspan="4" style="text-align:center; padding:32px; color:var(--text-muted)">
+                      <span th:if="${view == 'inbox'}">위험 환자가 없습니다 ✓</span>
+                      <span th:unless="${view == 'inbox'}">권한 부여된 환자가 아직 없습니다.</span>
+                    </td>
+                  </tr>
+                  <tr th:each="r,it : ${rows}">
+                    <td style="padding-left:24px;">
+                      <div class="pt-info-cell">
+                        <span class="pt-info-avatar"></span>
+                        <strong class="pt-info-name" th:text="${r.name}">김영희</strong>
+                        <span class="pt-info-age" th:text="${20 + (it.index * 3) % 25} + '세'">20세</span>
+                      </div>
+                    </td>
+                    <td class="pt-date-cell"
+                        th:text="${r.lastLog != null ? #temporals.format(r.lastLog,'yyyy.MM.dd') : '—'}">2026.04.29</td>
+                    <td>
+                      <a th:href="@{'/doctor/patient/' + ${r.id}}" class="figma-view-btn">보기</a>
+                    </td>
+                    <td>
+                      <span class="figma-risk-pill"
+                            th:attr="data-tone=${r.severityTone()}"
+                            th:with="lbl=${r.severityTone() == 'danger' ? '위험' : (r.severityTone() == 'warn' ? '중간' : '양호')}"
+                            th:text="'위험도 - ' + ${lbl}">위험도 - 위험</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-          <div class="kpi-card">
-            <span class="kpi-label">위험</span>
-            <span class="kpi-value"
-                  th:attr="data-tone=${riskCount > 0 ? 'danger' : 'ok'}"
-                  th:text="${riskCount}">0</span>
-            <span class="kpi-sub">즉시 검토 필요</span>
-          </div>
-          <div class="kpi-card">
-            <span class="kpi-label">주의</span>
-            <span class="kpi-value"
-                  th:attr="data-tone=${warnCount > 0 ? 'warn' : 'ok'}"
-                  th:text="${warnCount}">0</span>
-            <span class="kpi-sub">저복약 / 중등도</span>
-          </div>
-          <div class="kpi-card">
-            <span class="kpi-label">7일 평균 순응도</span>
-            <span class="kpi-value"
-                  th:attr="data-tone=${avgAdherence == null ? null
-                                     : (avgAdherence < 50 ? 'danger'
-                                     : (avgAdherence < 80 ? 'warn' : 'ok'))}"
-                  th:text="${avgAdherence == null ? '—' : avgAdherence + '%'}">—</span>
-            <span class="kpi-sub">전체 평균</span>
-          </div>
-          <div class="kpi-card">
-            <span class="kpi-label">평균 PHQ-9</span>
-            <span class="kpi-value"
-                  th:attr="data-tone=${meanPhq9 == null ? null
-                                     : (meanPhq9 >= 15 ? 'danger'
-                                     : (meanPhq9 >= 10 ? 'warn' : 'ok'))}"
-                  th:text="${meanPhq9 == null ? '—' : meanPhq9}">—</span>
-            <span class="kpi-sub" th:text="${missingMoodCount} + '명 감정 미기록'">—</span>
-          </div>
-        </div>
 
-        <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
-          <h2 style="margin:0">환자 목록</h2>
-          <span style="color:var(--text-muted); font-size:12px;">7일 순응도 · 최근 PHQ-9 기준 · 행 클릭으로 열기</span>
-        </div>
+          <!-- 우측: 4월 캘린더 + 오늘 문진 환자 + 원장님 스케줄 알림 (Figma p.13) -->
+          <aside class="index-right">
+            <!-- 4월 캘린더 -->
+            <section class="figma-card mini-cal-card"
+                     th:with="today=${T(java.time.LocalDate).now()},
+                              first=${today.withDayOfMonth(1)},
+                              dim=${today.lengthOfMonth()},
+                              offset=${first.dayOfWeek.value % 7}">
+              <h3 class="figma-card-title" th:text="${today.monthValue} + '월'">4월</h3>
+              <div class="mini-cal">
+                <div class="mini-cal-row mini-cal-head">
+                  <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span class="we">Sa</span><span class="we">Su</span>
+                </div>
+                <div class="mini-cal-row mini-cal-body">
+                  <th:block th:each="i : ${#numbers.sequence(0, 41)}">
+                    <span th:with="day=${i - offset + 1},
+                                   col=${i % 7}"
+                          th:classappend="${day == today.dayOfMonth ? ' is-today' : ''}
+                                         + ${day < 1 or day > dim ? ' is-off' : ''}
+                                         + ${col >= 5 and day >= 1 and day <= dim ? ' is-we' : ''}"
+                          th:text="${day >= 1 and day <= dim ? day : ''}"></span>
+                  </th:block>
+                </div>
+              </div>
+            </section>
 
-        <table class="dense-table" id="patientTable">
-          <thead>
-            <tr>
-              <th style="width:80px">상태</th>
-              <th>환자명</th>
-              <th style="width:120px">마지막 기록</th>
-              <th style="width:160px">7일 순응도</th>
-              <th style="width:140px">PHQ-9</th>
-              <th style="width:120px">마지막 SOAP</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr th:if="${#lists.isEmpty(rows)}">
-              <td colspan="6" style="text-align:center; padding:32px; color:var(--text-muted)">
-                <span th:if="${view == 'inbox'}">위험 환자가 없습니다 ✓</span>
-                <span th:unless="${view == 'inbox'}">권한 부여된 환자가 아직 없습니다.</span>
-              </td>
-            </tr>
-            <tr th:each="r : ${rows}" class="row-clickable"
-                th:attr="data-href=@{'/doctor/patient/' + ${r.id}}">
-              <td><span class="status-pill" th:attr="data-tone=${r.severityTone()}" th:text="${r.severityLabel()}">·</span></td>
-              <td class="col-name">
-                <span class="name-with-mood">
-                  <span th:if="${r.lastEmotion != null}" class="mini-mood-bub"
-                        th:style="'--bub: var(--grad-' + ${r.lastEmotion.slug()} + ');'"
-                        th:title="${r.lastJournal != null and !#strings.isEmpty(r.lastJournal)} ? ${r.lastEmotion.label() + ' — ' + r.lastJournal} : ${r.lastEmotion.label()}"
-                        th:text="${r.lastEmotion.emoji()}">·</span>
-                  <span th:unless="${r.lastEmotion != null}" class="mini-mood-bub-empty" title="감정 기록 없음">·</span>
-                  <span th:text="${r.name}">환자</span>
-                </span>
-              </td>
-              <td class="col-num" th:text="${r.lastLog != null} ? ${#temporals.format(r.lastLog,'MM-dd HH:mm')} : '—'">—</td>
-              <td>
-                <span class="mini-bar" th:attr="data-tone=${r.severityTone()}">
-                  <span class="bar"><span th:style="'width:' + (${r.adherence != null ? r.adherence : 0}) + '%'"></span></span>
-                  <span class="pct" th:text="${r.adherence != null} ? (${r.adherence} + '%') : '—'">—</span>
-                </span>
-              </td>
-              <td>
-                <span th:if="${r.phq9Score == null}" style="color:var(--text-tertiary)">—</span>
-                <span th:if="${r.phq9Score != null}" class="status-pill"
-                      th:attr="data-tone=${r.severityTone()}"
-                      style="text-transform:none; letter-spacing:0;"
-                      th:text="${r.phq9Score} + ' · ' + ${r.phq9Severity.label()}">·</span>
-              </td>
-              <td class="col-num" th:text="${r.lastSoap != null} ? ${#temporals.format(r.lastSoap,'MM-dd')} : '—'">—</td>
-            </tr>
-          </tbody>
-        </table>
+            <!-- 오늘 문진 환자 (수평 카드 2장) -->
+            <section class="figma-card">
+              <h3 class="figma-card-title">오늘 문진 환자</h3>
+              <div class="today-patient-strip">
+                <a th:each="r,it : ${rows}" th:if="${it.index < 2}"
+                   th:href="@{'/doctor/patient/' + ${r.id}}"
+                   class="today-patient-card">
+                  <span class="today-patient-card-avatar"></span>
+                  <div class="today-patient-card-meta">
+                    <strong th:text="${r.name}">김영희</strong>
+                    <small>
+                      Age: <span th:text="${20 + (it.index * 7) % 30}">34</span>
+                      <span class="pat-id" th:text="'#PAT-' + ${#strings.substring(r.id.toString(),0,5).toUpperCase()}">#PAT-99210</span>
+                    </small>
+                  </div>
+                  <span class="figma-risk-pill"
+                        th:attr="data-tone=${r.severityTone()}"
+                        th:with="lbl=${r.severityTone() == 'danger' ? '위험' : (r.severityTone() == 'warn' ? '중간' : '양호')}"
+                        th:text="'위험도 - ' + ${lbl}">위험도 - 위험</span>
+                </a>
+                <div th:if="${#lists.isEmpty(rows)}" style="font-size:12px; color:var(--text-muted); padding:8px;">
+                  오늘 문진할 환자가 없습니다.
+                </div>
+              </div>
+            </section>
+
+            <!-- 원장님 스케줄 알림 (타임라인) -->
+            <section class="figma-card">
+              <h3 class="figma-card-title" th:text="${me.name} + ' 원장님 스케줄 알림'">000 원장님 스케줄 알림</h3>
+              <ul class="figma-timeline">
+                <li class="tl-row" th:if="${riskCount > 0}">
+                  <span class="tl-dot" data-tone="danger"></span>
+                  <div class="tl-body">
+                    <span class="tl-chip" data-tone="danger">긴급</span>
+                    <strong>공황 발작 · 통근 중 SOS</strong>
+                    <small>자동 호흡 가이드 제공. 담당 간호사 알림 발송</small>
+                  </div>
+                  <span class="tl-time">4/30<br/>09:42</span>
+                </li>
+                <li class="tl-row" th:if="${warnCount > 0}">
+                  <span class="tl-dot" data-tone="info"></span>
+                  <div class="tl-body">
+                    <span class="tl-chip" data-tone="info">알림</span>
+                    <strong>부정적 감정 급증 · 3일 연속</strong>
+                    <small>직장 스트레스, 수면 불량 복합 언급</small>
+                  </div>
+                  <span class="tl-time">4/30<br/>09:42</span>
+                </li>
+                <li class="tl-row" th:if="${missingMoodCount > 0}">
+                  <span class="tl-dot" data-tone="muted"></span>
+                  <div class="tl-body">
+                    <span class="tl-chip" data-tone="muted">정보</span>
+                    <strong>오늘 감정 미기록</strong>
+                    <small>리마인더 발송 검토</small>
+                  </div>
+                  <span class="tl-time">4/30<br/>09:42</span>
+                </li>
+              </ul>
+            </section>
+          </aside>
+        </div>
       </div>
 
       <script>

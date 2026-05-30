@@ -117,9 +117,17 @@
                 <span th:if="${n.updatedAt != null}" style="color:var(--text-tertiary)"
                       th:text="'(수정 ' + ${#temporals.format(n.updatedAt,'MM-dd HH:mm')} + ')'">·</span>
                 <span th:text="'· ' + ${n.doctor.name} + ' (' + ${n.doctor.role.label()} + ')'">·</span>
-                <a th:if="${n.doctor.id == me.id}"
-                   th:href="@{'/staff/note/' + ${n.id} + '/edit'}"
-                   style="margin-left:auto; color:#5E6AD2; font-weight:600;">수정</a>
+                <span th:if="${n.doctor.id == me.id}"
+                      style="margin-left:auto; display:flex; align-items:center; gap:8px;">
+                  <a th:href="@{'/staff/note/' + ${n.id} + '/edit'}"
+                     style="color:#5E6AD2; font-weight:600;">수정</a>
+                  <form th:action="@{'/staff/note/' + ${n.id} + '/delete'}" method="post"
+                        onsubmit="return confirm('이 차팅을 삭제할까요? 삭제 후에는 되돌릴 수 없습니다.');"
+                        style="display:inline;">
+                    <button type="submit"
+                            style="border:0; background:transparent; color:#B42318; font-weight:600; cursor:pointer; padding:0;">삭제</button>
+                  </form>
+                </span>
               </div>
               <div th:if="${n.subjective != null and !#strings.isEmpty(n.subjective)}"
                    style="font-size:13px; margin-top:6px;"><b>S</b> <span th:text="${n.subjective}">·</span></div>

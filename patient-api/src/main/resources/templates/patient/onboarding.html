@@ -97,6 +97,72 @@
       letter-spacing: 0.04em;
       margin: 20px 4px 8px;
     }
+
+    /* Modal Dialog styles */
+    .med-modal-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(4, 19, 48, 0.42);
+      backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 500;
+      padding: 20px;
+      transition: opacity 200ms ease;
+    }
+    .med-modal-content {
+      background: #FFFFFF;
+      border-radius: 24px;
+      width: 100%; max-width: 380px;
+      padding: 22px;
+      box-shadow: 0 12px 36px rgba(4, 19, 48, 0.16);
+      display: flex; flex-direction: column;
+      animation: scale-up 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes scale-up {
+      0% { transform: scale(0.92); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .med-modal-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 16px;
+    }
+    .med-modal-header h3 {
+      margin: 0; font-size: 18px; font-weight: 800; color: var(--clarix-navy);
+    }
+    .med-modal-header .close-btn {
+      background: transparent; border: 0;
+      font-size: 24px; color: var(--clarix-coral-dim);
+      cursor: pointer; line-height: 1; padding: 4px;
+    }
+    .med-modal-body {
+      display: flex; flex-direction: column;
+    }
+
+    /* Added meds item rows style */
+    .added-med-item {
+      display: flex; justify-content: space-between; align-items: center;
+      background: #fff;
+      border-radius: 14px;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      box-shadow: 0 2px 8px rgba(4,19,48,0.04);
+      border: 1px solid var(--clarix-line);
+      text-align: left;
+    }
+    .added-med-item .info-side {
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .added-med-item .med-title {
+      font-weight: 700; color: var(--clarix-navy); font-size: 14px;
+    }
+    .added-med-item .med-tags {
+      display: flex; gap: 4px; font-size: 11px; font-weight: 600; color: var(--clarix-coral-dim);
+      flex-wrap: wrap;
+    }
+    .added-med-item .delete-btn {
+      background: transparent; border: 0;
+      color: #FF453A; font-weight: 700; font-size: 12px;
+      cursor: pointer; padding: 6px;
+    }
   </style>
 </head>
 <body class="patient clarix">
@@ -148,27 +214,28 @@
     </div>
 
     <div class="section-title-clarix">새 약 추가 (최대 5개)</div>
-    <form th:action="@{/patient/onboarding}" method="post">
-      <div th:each="i : ${#numbers.sequence(1, 5)}" class="med-row">
-        <input type="text" th:name="'name' + ${i}" placeholder="약 이름 (예: 콘서타 18mg)" />
-        <div class="slot-toggles">
-          <input type="checkbox" th:id="'s' + ${i} + '_m'" th:name="'slots' + ${i}" value="morning" />
-          <label th:for="'s' + ${i} + '_m'">아침</label>
-          <input type="checkbox" th:id="'s' + ${i} + '_n'" th:name="'slots' + ${i}" value="noon" />
-          <label th:for="'s' + ${i} + '_n'">점심</label>
-          <input type="checkbox" th:id="'s' + ${i} + '_e'" th:name="'slots' + ${i}" value="evening" />
-          <label th:for="'s' + ${i} + '_e'">저녁</label>
-        </div>
-        <div class="days-row">
-          <label th:for="'days' + ${i}">처방 일수</label>
-          <input type="number" min="1" max="180" th:id="'days' + ${i}" th:name="'days' + ${i}" value="30" />
-          <span class="hint">종료 7일 전부터 ‘병원 가는 날’ 모드</span>
-        </div>
-        <input type="text" th:name="'storage' + ${i}"
-               placeholder="📍 약 보관 위치 (예: 침실 협탁, 부엌 서랍)"
-               style="width:100%; height:36px; margin-top:10px; padding:0 12px;
-                      border:1px solid var(--clarix-line); border-radius:8px;
-                      font-size:13px; background:#fff; color:var(--clarix-navy);" />
+    
+    <!-- Added Meds List -->
+    <div id="added-meds-list" style="margin-bottom: 12px;">
+      <div style="color: rgba(4,19,48,0.4); font-size: 13px; padding: 16px 12px; text-align: center; background: rgba(255,255,255,0.4); border-radius:12px; border:1px dashed var(--clarix-line);" id="meds-empty-notice">
+        추가된 새 약이 없습니다. 아래 버튼을 눌러 추가해주세요.
+      </div>
+    </div>
+
+    <!-- Trigger Button -->
+    <button type="button" class="btn-clarix btn-clarix-ghost" id="open-add-dialog-btn" style="width:100%; border-style:dashed; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+      <span>+ 새 약 추가하기</span>
+    </button>
+
+    <form th:action="@{/patient/onboarding}" method="post" id="onboardingMedForm">
+      <!-- Hidden inputs for backend DTO mapping -->
+      <div id="hidden-inputs-container">
+        <th:block th:each="i : ${#numbers.sequence(1, 5)}">
+          <input type="hidden" th:id="'raw-name-' + ${i}" th:name="'name' + ${i}" value="" />
+          <input type="hidden" th:id="'raw-days-' + ${i}" th:name="'days' + ${i}" value="" />
+          <input type="hidden" th:id="'raw-storage-' + ${i}" th:name="'storage' + ${i}" value="" />
+          <div th:id="'raw-slots-container-' + ${i}"></div>
+        </th:block>
       </div>
 
       <div style="margin-top: 24px; display: flex; gap: 8px;">
@@ -178,6 +245,187 @@
         <button type="submit" class="btn-clarix btn-clarix-primary" style="flex:2;">저장</button>
       </div>
     </form>
+
+  <!-- Modal Dialog -->
+  <div class="med-modal-backdrop" id="med-modal" style="display:none;">
+    <div class="med-modal-content">
+      <div class="med-modal-header">
+        <h3>새 약 추가</h3>
+        <button type="button" class="close-btn" id="close-modal-btn">&times;</button>
+      </div>
+      <div class="med-modal-body">
+        <div class="field" style="margin-bottom:14px; display:flex; flex-direction:column; text-align:left;">
+          <label style="font-weight:700; color:var(--clarix-navy); font-size:13px; margin-bottom:6px; display:block;">약 이름</label>
+          <input type="text" id="dlg-med-name" placeholder="약 이름 입력 (예: 콘서타 18mg)" style="width: 100%; height: 42px; padding: 0 14px; border: 1px solid var(--clarix-line); border-radius: 10px; font-size: 14px; background:#fff; color:var(--clarix-navy);" />
+        </div>
+        <div class="field" style="margin-bottom:14px; display:flex; flex-direction:column; text-align:left;">
+          <label style="font-weight:700; color:var(--clarix-navy); font-size:13px; margin-bottom:8px; display:block;">복용 시간대</label>
+          <div class="slot-toggles">
+            <input type="checkbox" id="dlg-slot-morning" value="morning" />
+            <label for="dlg-slot-morning">아침</label>
+            <input type="checkbox" id="dlg-slot-noon" value="noon" />
+            <label for="dlg-slot-noon">점심</label>
+            <input type="checkbox" id="dlg-slot-evening" value="evening" />
+            <label for="dlg-slot-evening">저녁</label>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:14px; display:flex; flex-direction:column; text-align:left;">
+          <label style="font-weight:700; color:var(--clarix-navy); font-size:13px; margin-bottom:6px; display:block;">처방 일수</label>
+          <input type="number" id="dlg-med-days" value="30" min="1" max="180" style="width: 100%; height: 42px; padding: 0 14px; border: 1px solid var(--clarix-line); border-radius: 10px; font-size: 14px; background:#fff; color:var(--clarix-navy);" />
+        </div>
+        <div class="field" style="margin-bottom:18px; display:flex; flex-direction:column; text-align:left;">
+          <label style="font-weight:700; color:var(--clarix-navy); font-size:13px; margin-bottom:6px; display:block;">약 보관 위치</label>
+          <input type="text" id="dlg-med-storage" placeholder="📍 예: 침실 협탁, 부엌 서랍" style="width: 100%; height: 42px; padding: 0 14px; border: 1px solid var(--clarix-line); border-radius: 10px; font-size: 14px; background:#fff; color:var(--clarix-navy);" />
+        </div>
+      </div>
+      <div class="med-modal-footer" style="display:flex; gap:8px;">
+        <button type="button" class="btn-clarix btn-clarix-ghost" id="cancel-modal-btn" style="flex:1; height:44px; font-size:14px; border-radius:22px;">취소</button>
+        <button type="button" class="btn-clarix btn-clarix-primary" id="add-med-submit-btn" style="flex:2; height:44px; font-size:14px; border-radius:22px;">목록에 추가</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const modal = document.getElementById('med-modal');
+      const openBtn = document.getElementById('open-add-dialog-btn');
+      const closeBtn = document.getElementById('close-modal-btn');
+      const cancelBtn = document.getElementById('cancel-modal-btn');
+      const addSubmitBtn = document.getElementById('add-med-submit-btn');
+
+      const addedMedsList = document.getElementById('added-meds-list');
+      const emptyNotice = document.getElementById('meds-empty-notice');
+
+      let tempMeds = [];
+
+      function showModal() {
+        if (tempMeds.length >= 5) {
+          alert('새 약은 최대 5개까지만 추가할 수 있습니다.');
+          return;
+        }
+        document.getElementById('dlg-med-name').value = '';
+        document.getElementById('dlg-slot-morning').checked = false;
+        document.getElementById('dlg-slot-noon').checked = false;
+        document.getElementById('dlg-slot-evening').checked = false;
+        document.getElementById('dlg-med-days').value = '30';
+        document.getElementById('dlg-med-storage').value = '';
+        
+        modal.style.display = 'flex';
+      }
+
+      function hideModal() {
+        modal.style.display = 'none';
+      }
+
+      openBtn.addEventListener('click', showModal);
+      closeBtn.addEventListener('click', hideModal);
+      cancelBtn.addEventListener('click', hideModal);
+
+      addSubmitBtn.addEventListener('click', () => {
+        const name = document.getElementById('dlg-med-name').value.trim();
+        const days = document.getElementById('dlg-med-days').value;
+        const storage = document.getElementById('dlg-med-storage').value.trim();
+        
+        const slots = [];
+        if (document.getElementById('dlg-slot-morning').checked) slots.push('morning');
+        if (document.getElementById('dlg-slot-noon').checked) slots.push('noon');
+        if (document.getElementById('dlg-slot-evening').checked) slots.push('evening');
+
+        if (!name) {
+          alert('약 이름을 입력해 주세요.');
+          return;
+        }
+        if (slots.length === 0) {
+          alert('최소 한 개 이상의 복용 시간대를 선택해 주세요.');
+          return;
+        }
+
+        tempMeds.push({ name, slots, days, storage });
+        renderList();
+        syncHiddenInputs();
+        hideModal();
+      });
+
+      function deleteTempMed(index) {
+        tempMeds.splice(index, 1);
+        renderList();
+        syncHiddenInputs();
+      }
+
+      function renderList() {
+        const items = addedMedsList.querySelectorAll('.added-med-item');
+        items.forEach(el => el.remove());
+
+        if (tempMeds.length === 0) {
+          emptyNotice.style.display = 'block';
+          return;
+        }
+        emptyNotice.style.display = 'none';
+
+        tempMeds.forEach((m, idx) => {
+          const slotLabels = m.slots.map(s => s === 'morning' ? '아침' : (s === 'noon' ? '점심' : '저녁')).join(', ');
+          const row = document.createElement('div');
+          row.className = 'added-med-item';
+          
+          let storageHtml = '';
+          if (m.storage) {
+            storageHtml = '<span>· 📍 ' + escapeHtml(m.storage) + '</span>';
+          }
+
+          row.innerHTML = 
+            '<div class="info-side">' +
+              '<span class="med-title">' + escapeHtml(m.name) + '</span>' +
+              '<div class="med-tags">' +
+                '<span>' + slotLabels + '</span>' +
+                '<span>· ' + m.days + '일분</span>' +
+                storageHtml +
+              '</div>' +
+            '</div>' +
+            '<button type="button" class="delete-btn">삭제</button>';
+          
+          row.querySelector('.delete-btn').addEventListener('click', () => {
+            deleteTempMed(idx);
+          });
+          addedMedsList.appendChild(row);
+        });
+      }
+
+      function syncHiddenInputs() {
+        for (let i = 1; i <= 5; i++) {
+          document.getElementById('raw-name-' + i).value = '';
+          document.getElementById('raw-days-' + i).value = '';
+          document.getElementById('raw-storage-' + i).value = '';
+          document.getElementById('raw-slots-container-' + i).innerHTML = '';
+        }
+
+        tempMeds.forEach((m, idx) => {
+          const num = idx + 1;
+          document.getElementById('raw-name-' + num).value = m.name;
+          document.getElementById('raw-days-' + num).value = m.days;
+          document.getElementById('raw-storage-' + num).value = m.storage;
+
+          const slotContainer = document.getElementById('raw-slots-container-' + num);
+          m.slots.forEach(slot => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'slots' + num;
+            input.value = slot;
+            slotContainer.appendChild(input);
+          });
+        });
+      }
+
+      function escapeHtml(str) {
+        return str.replace(/[&<>"']/g, (ch) => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;',
+        })[ch]);
+      }
+    })();
+  </script>
   </div>
 </body>
 </html>

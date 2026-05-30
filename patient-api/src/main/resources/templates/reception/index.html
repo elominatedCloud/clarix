@@ -28,6 +28,14 @@
     .book-cell {
       display: flex; flex-direction: column; gap: 4px; align-items: flex-start;
     }
+    .appointment-form {
+      display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+    }
+    .appointment-form input[type="datetime-local"] {
+      height: 28px; min-width: 150px; padding: 0 8px;
+      border: 1px solid var(--border-subtle); border-radius: 4px;
+      font: inherit; font-size: 11px; color: var(--text-main);
+    }
     .book-cell .booked-when {
       font-size: 11px; color: #027A48; font-variant-numeric: tabular-nums;
     }
@@ -42,6 +50,33 @@
     .book-cell button.book {
       background: #5E6AD2; color: #fff; border-color: #5E6AD2;
     }
+    .request-panel {
+      margin: 0 0 16px; padding: 14px;
+      border: 1px solid var(--border-subtle); border-radius: 8px;
+      background: var(--doctor-surface);
+    }
+    .request-panel h3 {
+      margin: 0 0 10px; font-size: 13px; font-weight: 700;
+    }
+    .request-list {
+      display: grid; gap: 8px;
+    }
+    .request-item {
+      display: grid; grid-template-columns: 120px 1fr auto;
+      gap: 10px; align-items: center;
+      padding: 10px 12px; border: 1px solid var(--border-subtle);
+      border-radius: 6px; background: var(--doctor-surface-muted);
+    }
+    .request-item .meta {
+      display: flex; flex-direction: column; gap: 2px; min-width: 0;
+    }
+    .request-item .name { font-weight: 700; }
+    .request-item .time { color: var(--text-muted); font-size: 11px; }
+    .request-item .reason {
+      color: var(--text-primary); font-size: 12px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .request-empty { color: var(--text-muted); font-size: 12px; }
   </style>
 </head>
 <body class="doctor">
@@ -51,6 +86,7 @@
 
       <div class="sidebar-section">Workspace</div>
       <a class="sidebar-item" data-active="true" th:href="@{/reception/}">예약 도움</a>
+      <a class="sidebar-item" th:href="@{/reception/prescriptions}">처방전 발행</a>
 
       <div class="sidebar-section">Account</div>
       <div class="sidebar-item sidebar-uid" style="font-size:11px; color:var(--text-muted)"
@@ -85,6 +121,25 @@
           <span style="color:var(--text-muted); font-size:12px;">처방 종료 임박 환자 우선 · 미예약 환자 위쪽</span>
         </div>
 
+        <section class="request-panel" aria-label="환자 진료 요청">
+          <h3>환자 진료 요청</h3>
+          <div th:if="${#lists.isEmpty(pendingCareRequests)}" class="request-empty">
+            접수 대기 중인 진료 요청이 없습니다.
+          </div>
+          <div th:unless="${#lists.isEmpty(pendingCareRequests)}" class="request-list">
+            <article th:each="req : ${pendingCareRequests}" class="request-item">
+              <div class="meta">
+                <span class="name" th:text="${req.patient.name}">환자명</span>
+                <span class="time" th:text="${req.createdAtDisplay()}">5월 27일 14:00</span>
+              </div>
+              <div class="reason" th:text="${req.reason}">진료 요청 내용</div>
+              <form th:action="@{'/reception/request/' + ${req.id} + '/scheduled'}" method="post">
+                <button type="submit" class="btn btn-secondary">처리 완료</button>
+              </form>
+            </article>
+          </div>
+        </section>
+
         <table class="dense-table">
           <thead>
             <tr>
@@ -92,7 +147,7 @@
               <th>환자명</th>
               <th style="width:130px">남은 처방</th>
               <th>메모</th>
-              <th style="width:170px">예약</th>
+              <th style="width:260px">진료 일정</th>
             </tr>
           </thead>
           <tbody>
@@ -126,16 +181,19 @@
               <td class="book-cell">
                 <th:block th:if="${r.bookedAt != null}">
                   <span class="booked-when"
-                        th:text="${#temporals.format(r.bookedAt, 'MM-dd HH:mm')} + ' 예약'">—</span>
+                        th:text="${r.bookedAtDisplayValue()} + ' 진료 예정'">—</span>
                   <form th:action="@{'/reception/patient/' + ${r.id} + '/book'}" method="post">
                     <input type="hidden" name="booked" value="false" />
                     <button type="submit" class="booked">예약 취소</button>
                   </form>
                 </th:block>
-                <form th:if="${r.bookedAt == null}"
+                <form class="appointment-form"
                       th:action="@{'/reception/patient/' + ${r.id} + '/book'}" method="post">
                   <input type="hidden" name="booked" value="true" />
-                  <button type="submit" class="book">예약 잡힘</button>
+                  <input type="datetime-local" name="appointmentAt"
+                         th:value="${r.bookedAtInputValue()}" required />
+                  <button type="submit" class="book"
+                          th:text="${r.bookedAt == null ? '예약 확정' : '일정 변경'}">예약 확정</button>
                 </form>
               </td>
             </tr>

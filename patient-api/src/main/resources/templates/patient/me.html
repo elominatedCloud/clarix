@@ -31,6 +31,16 @@
       <span class="me-val" style="color:var(--clarix-coral)">연결하기</span>
     </a>
 
+    <div class="clarix-section-title">진료 일정</div>
+    <div class="me-row" th:if="${me.bookedAt != null}">
+      <span class="me-key">다음 진료</span>
+      <span class="me-val" th:text="${me.bookedAtDisplay()}">—</span>
+    </div>
+    <div class="me-row" th:unless="${me.bookedAt != null}">
+      <span class="me-key">예정된 진료 일정</span>
+      <span class="me-val">없음</span>
+    </div>
+
     <div class="clarix-section-title">건강 기록</div>
     <a class="me-row link"
        th:href="${phq9 != null} ? @{/patient/assessment/result} : @{/patient/assessment}">
@@ -53,16 +63,6 @@
     </form>
   </div>
 
-  <nav class="clarix-tabbar">
-    <a th:href="@{/patient/}">
-      <span class="dot">🏠</span><span>홈</span>
-    </a>
-    <a th:href="@{/patient/calendar}">
-      <span class="dot">📅</span><span>캘린더</span>
-    </a>
-    <a th:href="@{/patient/me}" aria-current="page">
-      <span class="dot">👤</span><span>마이페이지</span>
-    </a>
-  </nav>
+  <nav th:replace="~{fragments/patient-nav :: tabbar('settings')}"></nav>
 </body>
 </html>

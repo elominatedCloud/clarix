@@ -20,40 +20,47 @@
   <link rel="stylesheet" th:href="@{/css/doctor.css}" />
   <script defer th:src="@{/js/doctor-theme.js}"></script>
 </head>
-<body class="doctor">
+<body class="doctor doctor-reference">
   <div class="doctor-shell">
-    <aside class="sidebar">
-      <div class="sidebar-brand"><a th:href="@{/doctor/}" style="color:inherit; font-weight:700">Clarix</a></div>
-
-      <div class="sidebar-section">Workspace</div>
-      <a class="sidebar-item" th:href="@{/doctor/}">All Patients</a>
-
-      <div class="sidebar-section">Admin</div>
-      <a class="sidebar-item" th:href="@{/doctor/admin}" data-active="true">직원 관리</a>
-
-      <div class="sidebar-section">Account</div>
-      <div class="sidebar-item sidebar-uid" style="font-family:var(--font-mono); font-size:11px; color:var(--text-muted)" th:text="${me.id.toString().substring(0,8)}">UID</div>
-      <form th:action="@{/auth/logout}" method="post" class="sidebar-logout">
-        <button class="sidebar-item" style="border:0; background:transparent; width:100%; text-align:left; cursor:pointer">로그아웃</button>
-      </form>
+    <aside class="sidebar" aria-label="의사 메뉴">
+      <a class="sidebar-logo" th:href="@{/doctor/}" aria-label="Clarix 홈">
+        <span class="sidebar-logo-mark" aria-hidden="true"></span>
+        <span class="sr-only">Clarix</span>
+      </a>
+      <nav class="rail-nav" aria-label="주요 메뉴">
+        <a class="rail-link" th:href="@{/doctor/(view='all')}" title="환자 목록" aria-label="환자 목록">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10.5 9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>
+          <span>환자 목록</span>
+        </a>
+        <a class="rail-link" th:href="@{/doctor/(view='inbox')}" title="위험 환자" aria-label="위험 환자">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M4 14h4l2 3h4l2-3h4"/><path d="M8 8h8"/></svg>
+          <span>위험 환자</span>
+        </a>
+        <a class="rail-link" th:href="@{/doctor/admin}" data-active="true" title="직원 관리" aria-label="직원 관리">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 20v-1.5a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20"/><circle cx="9.5" cy="7.5" r="3.5"/><path d="M21 20v-1.5a3.5 3.5 0 0 0-2.5-3.35"/><path d="M16.5 4.3a3.5 3.5 0 0 1 0 6.4"/></svg>
+          <span>직원 관리</span>
+        </a>
+      </nav>
+      <div class="rail-tools">
+        <form th:action="@{/auth/logout}" method="post" style="display:inline-flex;">
+          <button type="submit" class="header-icon-btn" title="로그아웃" aria-label="로그아웃">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h4v16h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>
+          </button>
+        </form>
+        <button type="button" class="header-icon-btn theme-icon-btn" data-theme-icon-btn
+                title="라이트/다크 전환" aria-label="라이트 다크 전환">
+          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M4.93 19.07l1.41-1.41"/><path d="M17.66 6.34l1.41-1.41"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/></svg>
+        </button>
+        <a class="doctor-chip" th:href="@{/doctor/admin}"
+           th:title="${me.name} + ' 의사 · 직원/병원 설정'">
+          <span class="avatar" th:text="${#strings.toUpperCase(#strings.substring(me.name,0,1))}">의</span>
+          <span class="doctor-chip-name" th:text="${me.name} + ' 의사'">김 의사</span>
+        </a>
+      </div>
     </aside>
 
     <main class="doctor-main">
-      <div class="topbar">
-        <div class="breadcrumb">
-          <a th:href="@{/doctor/}">Workspace</a>
-          <span class="sep">/</span>
-          <span class="current">직원 관리</span>
-        </div>
-        <div class="topbar-right">
-          <label class="theme-switch" title="라이트/다크 전환">
-            <input type="checkbox" data-theme-toggle aria-label="다크 모드" />
-            <span class="theme-switch-track" aria-hidden="true"><span class="theme-switch-thumb"></span></span>
-            <span class="theme-switch-label" data-theme-label>Light</span>
-          </label>
-          <span class="avatar" th:text="${#strings.toUpperCase(#strings.substring(me.name,0,1))}">의</span>
-        </div>
-      </div>
 
       <div class="content">
         <div th:if="${formError}" class="doctor-alert warn" style="margin-bottom:16px;">
@@ -64,8 +71,33 @@
         <div th:if="${me.hospital == null}"
              style="background:#FFFBEB; border:1px solid #FCD34D; border-radius:6px; padding:12px 14px; margin-bottom:16px; font-size:13px; color:#854D0E;">
           병원이 설정되어 있지 않아 직원 초대를 발급할 수 없습니다.
-          <br/>관리자에게 문의해 hospital을 설정해주세요.
+          <br/>아래 병원 설정에서 소속 병원을 먼저 선택하세요.
         </div>
+
+        <!-- 병원 설정 (의사 본인의 소속 병원 변경) -->
+        <section style="background:var(--doctor-surface, #fff); border:1px solid var(--border-subtle, #E2E8F0); border-radius:12px; padding:16px 18px; margin-bottom:24px;">
+          <h2 style="margin:0 0 6px;">병원 설정</h2>
+          <p style="margin:0 0 14px; color:var(--text-muted); font-size:12px;">
+            소속 병원을 변경하면 직원 초대 발급과 환자 권한이 새 병원 기준으로 적용됩니다.
+          </p>
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+            <div>
+              <div style="font-size:11px; color:var(--text-muted); font-weight:700;">현재 소속</div>
+              <strong style="font-size:15px;"
+                      th:text="${me.hospital != null ? me.hospital.name : '미지정'}">—</strong>
+              <div th:if="${me.hospital != null and me.hospital.address != null}"
+                   style="font-size:11px; color:var(--text-muted); margin-top:2px;"
+                   th:text="${me.hospital.address}">주소</div>
+              <div th:if="${me.hospital != null and me.hospital.specialty != null}"
+                   style="font-size:11px; color:var(--doctor-accent); font-weight:700; margin-top:2px;"
+                   th:text="${me.hospital.specialty}">진료과</div>
+            </div>
+            <a th:href="@{/doctor/welcome}" class="btn btn-primary"
+               style="height:34px; padding:0 16px; display:inline-flex; align-items:center;">
+              병원 변경
+            </a>
+          </div>
+        </section>
 
         <!-- 등록된 직원 -->
         <h2 style="margin:0 0 8px;">등록된 직원
@@ -105,9 +137,11 @@
               style="display:flex; gap:8px; align-items:flex-start; margin-bottom:24px; flex-wrap: wrap;">
           <input type="email" name="email" placeholder="staff@hospital.kr" required
                  style="flex:1; min-width:200px; height:34px; padding:0 12px; border:1px solid var(--border-subtle); border-radius:6px; font-size:13px;" />
+          <!-- 역할 select: 텍스트 대비를 위해 옅은 배경(#FFE4DC) + 진한 글자(#7C2D12) -->
           <select name="role" required
-                  style="height:34px; padding:0 12px; border:1px solid var(--border-subtle); border-radius:6px; font-size:13px; background:#fff;">
-            <option th:each="r : ${staffRoles}" th:value="${r.name()}" th:text="${r.label()}">·</option>
+                  style="height:34px; padding:0 12px; border:1px solid #FBCEB5; border-radius:6px; font-size:13px; font-weight:700; background:#FFE4DC; color:#7C2D12;">
+            <option th:each="r : ${staffRoles}" th:value="${r.name()}" th:text="${r.label()}"
+                    style="background:#fff; color:#0F172A;">·</option>
           </select>
           <button type="submit" class="btn btn-primary"
                   th:disabled="${me.hospital == null}"

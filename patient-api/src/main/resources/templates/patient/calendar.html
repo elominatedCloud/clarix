@@ -15,6 +15,12 @@
       돌아보아요.
     </h1>
 
+    <div th:if="${me.bookedAt != null}" class="calendar-appointment-summary">
+      <span>다음 진료</span>
+      <strong th:text="${me.bookedAtDisplay()}">6월 3일 14:30</strong>
+      <small th:if="${me.hospital != null}" th:text="${me.hospital.name}">병원명</small>
+    </div>
+
     <div class="cal-card">
       <div class="cal-head">
         <a th:href="@{/patient/calendar(ym=${prevMonth}, date=${selected})}">
@@ -45,7 +51,8 @@
                                + (cell.dow == 7 ? 'sun ' : '')
                                + (cell.today ? 'today ' : '')
                                + (cell.selected ? 'selected ' : '')
-                               + (cell.emotion != null ? 'has-mood' : '')}"
+                               + (cell.emotion != null ? 'has-mood ' : '')
+                               + (cell.appointment ? 'has-appointment' : '')}"
                th:style="${cell.emotion == null ? '' : '--cell-grad: var(--grad-' + cell.emotion.slug() + ');'}"
                th:href="@{/patient/calendar(ym=${viewMonth}, date=${cell.date})}"
                th:text="${cell.day}">1</a>
@@ -68,15 +75,20 @@
       <div class="body" th:text="${selectedMood.journal != null and !#strings.isEmpty(selectedMood.journal)} ? ${selectedMood.journal} : '기록된 일기가 없어요'">—</div>
     </div>
 
-    <div th:if="${selectedMood == null}"
-         style="margin-top:18px; color:rgba(255,255,255,0.65); text-align:center; font-size:13px;">
+    <div th:if="${selectedHasAppointment}" class="cal-day-appointment">
+      <span class="label">진료 일정</span>
+      <strong th:text="${me.bookedAtDisplay()}">6월 3일 14:30</strong>
+      <small th:if="${me.hospital != null}" th:text="${me.hospital.name}">병원명</small>
+    </div>
+
+    <div th:if="${selectedMood == null and !selectedHasAppointment}" class="cal-empty-state">
       이 날엔 기록이 없어요
     </div>
 
     <!-- ============ Insights (merged) ============ -->
     <div id="insights" style="margin-top: 36px;"></div>
 
-    <h2 style="font-size:14px; font-weight:700; color:var(--clarix-coral); margin: 0 4px 8px; letter-spacing: 0.02em;">
+    <h2 class="cal-insight-title">
       <span th:text="${me.name}">사용자</span>님의 무드 인사이트
     </h2>
 
@@ -133,22 +145,12 @@
       </th:block>
     </div>
 
-    <div style="margin-top:14px; text-align:center; color:rgba(255,255,255,0.55); font-size:12px;">
+    <div class="cal-count-summary">
       최근 7일 <strong th:text="${weeklyCount}">0</strong>건 ·
       최근 30일 <strong th:text="${monthlyCount}">0</strong>건
     </div>
   </div>
 
-  <nav class="clarix-tabbar">
-    <a th:href="@{/patient/}">
-      <span class="dot">🏠</span><span>홈</span>
-    </a>
-    <a th:href="@{/patient/calendar}" aria-current="page">
-      <span class="dot">📅</span><span>캘린더</span>
-    </a>
-    <a th:href="@{/patient/me}">
-      <span class="dot">👤</span><span>마이페이지</span>
-    </a>
-  </nav>
+  <nav th:replace="~{fragments/patient-nav :: tabbar('calendar')}"></nav>
 </body>
 </html>

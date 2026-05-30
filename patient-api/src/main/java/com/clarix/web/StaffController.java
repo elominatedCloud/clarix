@@ -101,6 +101,13 @@ public class StaffController {
         return "redirect:/staff/patient/" + n.getPatient().getId();
     }
 
+    @PostMapping("/note/{id}/delete")
+    public String deleteNote(@PathVariable UUID id, HttpSession session) {
+        User me = requireStaff(session);
+        UUID patientId = noteSvc.delete(me, id);
+        return "redirect:/staff/patient/" + patientId;
+    }
+
     @PostMapping("/patient/{id}/soap")
     public String addSoap(@PathVariable UUID id,
                           @Valid @ModelAttribute SoapNoteForm form,

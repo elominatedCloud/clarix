@@ -1,6 +1,7 @@
 package com.clarix.web;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.YearMonth;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -20,8 +21,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.clarix.dto.AssessmentForm;
+import com.clarix.dto.CareRequestForm;
 import com.clarix.dto.DosageFeedbackForm;
 import com.clarix.dto.ExerciseLogForm;
 import com.clarix.dto.HospitalPickForm;
@@ -36,6 +39,7 @@ import com.clarix.domain.Prescription;
 import com.clarix.domain.Role;
 import com.clarix.domain.User;
 import com.clarix.service.AssessmentService;
+import com.clarix.service.CareRequestService;
 import com.clarix.service.CurrentUser;
 import com.clarix.service.DoctorService;
 import com.clarix.service.DrugInteractionService;
@@ -48,20 +52,25 @@ import jakarta.validation.Valid;
 @RequestMapping("/patient")
 public class PatientController {
 
+    private static final ZoneId CLINIC_ZONE = ZoneId.of("Asia/Seoul");
+
     private final CurrentUser current;
     private final PatientService patientSvc;
     private final AssessmentService assessmentSvc;
     private final DoctorService doctorSvc;
     private final DrugInteractionService drugSvc;
+    private final CareRequestService careRequestSvc;
 
     public PatientController(CurrentUser current, PatientService patientSvc,
                              AssessmentService assessmentSvc, DoctorService doctorSvc,
-                             DrugInteractionService drugSvc) {
+                             DrugInteractionService drugSvc,
+                             CareRequestService careRequestSvc) {
         this.current = current;
         this.patientSvc = patientSvc;
         this.assessmentSvc = assessmentSvc;
         this.doctorSvc = doctorSvc;
         this.drugSvc = drugSvc;
+        this.careRequestSvc = careRequestSvc;
     }
 
     /* ---- Today ---- */
@@ -178,6 +187,7 @@ public class PatientController {
         model.addAttribute("hasPrescriptions", !rx.isEmpty());
         model.addAttribute("medTotal", totalSlots);
         model.addAttribute("medTaken", taken);
+        model.addAttribute("allMedicationDone", totalSlots > 0 && taken >= totalSlots);
         model.addAttribute("daysToRefill", daysToRefill);
         model.addAttribute("nextRefillDate", patientSvc.nextRefillDate(me.getId()).orElse(null));
         model.addAttribute("dueSlot", dueSlot);
@@ -356,7 +366,25 @@ public class PatientController {
         model.addAttribute("mood", patientSvc.todayMood(me.getId()).orElse(null));
         model.addAttribute("phq9", assessmentSvc.latest(me.getId()).orElse(null));
         model.addAttribute("shares", doctorSvc.permissionsForPatient(me.getId()));
+        // 운동/식사 총합 칼로리. 운동은 종류별 분당 추정값, 식사는 note의 pipe 세번째 토큰에서 파싱.
+        model.addAttribute("exerciseKcalToday", patientSvc.exerciseKcalToday(me.getId()));
+        model.addAttribute("mealKcalToday", patientSvc.mealKcalToday(me.getId()));
+        // 최신 수면 기록(직접 입력 또는 외부 헬스 앱 연동). 없으면 null이 모델로 전달됨.
+        model.addAttribute("latestSleep", patientSvc.latestSleep(me.getId()).orElse(null));
+        addCareRequestModel(me, model);
         return "patient/today";
+    }
+
+    /** 수면 시간 직접 입력 (Apple 건강/삼성 헬스 연동 전 fallback 경로). */
+    @PostMapping("/sleep")
+    public String logSleep(@Valid @ModelAttribute com.clarix.dto.SleepLogForm form,
+                           BindingResult errors,
+                           HttpSession session,
+                           RedirectAttributes redirect) {
+        User me = current.requireRole(session, Role.PATIENT);
+        if (errors.hasErrors()) return ValidationFeedback.redirect("/patient/", errors, redirect);
+        patientSvc.logSleep(me, form.getHours(), "MANUAL");
+        return "redirect:/patient/";
     }
 
     /* ---- Welcome (병원 선택) ---- */
@@ -497,8 +525,40 @@ public class PatientController {
         model.addAttribute("statusIdx", idx);
         model.addAttribute("medTotal", totalSlots);
         model.addAttribute("medTaken", taken);
+        model.addAttribute("allMedicationDone", totalSlots > 0 && taken >= totalSlots);
+        model.addAttribute("daysToRefill", patientSvc.daysUntilRefill(me.getId()));
+        model.addAttribute("nextRefillDate", patientSvc.nextRefillDate(me.getId()).orElse(null));
         model.addAttribute("today", LocalDate.now());
+        addCareRequestModel(me, model);
         return "patient/medication";
+    }
+
+    @PostMapping("/care-request")
+    public String createCareRequest(@Valid @ModelAttribute CareRequestForm form,
+                                    BindingResult errors,
+                                    HttpSession session,
+                                    RedirectAttributes redirect) {
+        User me = current.requireRole(session, Role.PATIENT);
+        String returnTo = safeReturnTo(form.getReturnTo());
+        if (errors.hasErrors()) return ValidationFeedback.redirect(returnTo, errors, redirect);
+        try {
+            careRequestSvc.create(me, form.getReason());
+            redirect.addFlashAttribute("careRequestNotice", "진료 요청이 병원 데스크로 전달됐어요");
+        } catch (ResponseStatusException e) {
+            redirect.addFlashAttribute("formError", e.getReason());
+        }
+        return "redirect:" + returnTo;
+    }
+
+    @PostMapping("/care-request/{id}/cancel")
+    public String cancelCareRequest(@PathVariable UUID id,
+                                    @RequestParam(defaultValue = "/patient/medication") String returnTo,
+                                    HttpSession session,
+                                    RedirectAttributes redirect) {
+        User me = current.requireRole(session, Role.PATIENT);
+        careRequestSvc.cancel(me.getId(), id);
+        redirect.addFlashAttribute("careRequestNotice", "진료 요청을 취소했어요");
+        return "redirect:" + safeReturnTo(returnTo);
     }
 
     @PostMapping("/medication/toggle")
@@ -780,11 +840,16 @@ public class PatientController {
             ? returnTo : "/patient/";
     }
 
+    private void addCareRequestModel(User me, Model model) {
+        model.addAttribute("openCareRequest", careRequestSvc.pendingForPatient(me.getId()).orElse(null));
+        model.addAttribute("recentCareRequests", careRequestSvc.recentForPatient(me.getId()));
+    }
+
     /* ---- Calendar ---- */
 
     public static record DayCell(LocalDate date, int day, int dow, boolean inMonth,
                                   Emotion emotion, String journal,
-                                  boolean selected, boolean today) {}
+                                  boolean selected, boolean today, boolean appointment) {}
 
     @GetMapping("/calendar")
     public String calendar(@RequestParam(required = false) String ym,
@@ -806,6 +871,9 @@ public class PatientController {
         var moods = patientSvc.moodsBetween(me.getId(), viewMonth.atDay(1), viewMonth.atEndOfMonth());
         Map<LocalDate, com.clarix.domain.SymptomLog> moodByDate = new HashMap<>();
         for (var m : moods) moodByDate.put(m.getLogDate(), m);
+        LocalDate appointmentDate = me.getBookedAt() == null
+            ? null
+            : me.getBookedAt().atZoneSameInstant(CLINIC_ZONE).toLocalDate();
 
         // Monday-start 6×7 grid
         LocalDate firstDay = viewMonth.atDay(1);
@@ -828,7 +896,8 @@ public class PatientController {
                     m != null ? m.getEmotion() : null,
                     m != null ? m.getJournal() : null,
                     cursor.equals(selected),
-                    cursor.equals(today)
+                    cursor.equals(today),
+                    cursor.equals(appointmentDate)
                 ));
                 cursor = cursor.plusDays(1);
             }
@@ -849,6 +918,8 @@ public class PatientController {
         model.addAttribute("weekNumbers", weekNumbers);
         model.addAttribute("selected", selected);
         model.addAttribute("selectedMood", selectedMood);
+        model.addAttribute("appointmentDate", appointmentDate);
+        model.addAttribute("selectedHasAppointment", selected.equals(appointmentDate));
 
         // 통합된 인사이트 (이전 /patient/insights와 동일 집계)
         var weekly  = patientSvc.recentMoods(me.getId(), 7);
@@ -857,6 +928,7 @@ public class PatientController {
         model.addAttribute("topMonth",     topEmotion(monthly));
         model.addAttribute("weeklyCount",  weekly.size());
         model.addAttribute("monthlyCount", monthly.size());
+        addCareRequestModel(me, model);
         return "patient/calendar";
     }
 

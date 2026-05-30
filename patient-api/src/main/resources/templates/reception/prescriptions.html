@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Clarix · 처방전 발행</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <link rel="stylesheet" th:href="@{/css/tokens.css}" />
+  <link rel="stylesheet" th:href="@{/css/doctor.css}" />
+  <style>
+    .rx-table-card {
+      background: #fff;
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin-top: 16px;
+    }
+    .rx-row {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr 1fr auto;
+      gap: 14px;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .rx-row:last-child { border-bottom: 0; }
+    .rx-row .who strong { display: block; font-size: 14px; font-weight: 800; color: #0F172A; }
+    .rx-row .who small { font-size: 11px; color: #64748B; font-family: var(--font-mono, monospace); }
+    .rx-row .med { font-size: 13px; font-weight: 700; color: #0F172A; }
+    .rx-row .slot-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+    .rx-row .slot-tags span {
+      font-size: 10px; font-weight: 700; padding: 2px 8px;
+      border-radius: 999px; background: #EEF2FF; color: #4D63F6;
+    }
+    .rx-row .when { font-size: 11px; color: #64748B; font-variant-numeric: tabular-nums; }
+    .rx-row .actions a {
+      display: inline-flex; align-items: center;
+      padding: 7px 14px; border-radius: 8px;
+      background: #4D63F6; color: #fff;
+      font-size: 12px; font-weight: 700; text-decoration: none;
+    }
+    .rx-row .actions a:hover { background: #3C50DC; }
+    .empty {
+      padding: 32px; text-align: center; color: var(--text-muted);
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body class="doctor">
+  <div class="doctor-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand">Clarix · 데스크</div>
+      <div class="sidebar-section">Workspace</div>
+      <a class="sidebar-item" th:href="@{/reception/}">예약 도움</a>
+      <a class="sidebar-item" data-active="true" th:href="@{/reception/prescriptions}">처방전 발행</a>
+      <div class="sidebar-section">Account</div>
+      <div class="sidebar-item sidebar-uid" style="font-size:11px; color:var(--text-muted)"
+           th:text="${me.name} + ' · ' + ${me.role.label()}">·</div>
+      <div class="sidebar-item sidebar-uid" style="font-size:11px; color:var(--text-muted)"
+           th:text="${me.hospital != null ? me.hospital.name : '병원 미설정'}">·</div>
+      <form th:action="@{/auth/logout}" method="post" class="sidebar-logout">
+        <button class="sidebar-item" style="border:0; background:transparent; width:100%; text-align:left; cursor:pointer">로그아웃</button>
+      </form>
+    </aside>
+
+    <main class="doctor-main">
+      <div class="topbar">
+        <div class="breadcrumb"><span>Workspace</span> / <span>처방전 발행</span></div>
+      </div>
+
+      <div class="content">
+        <h1 style="margin:0 0 6px; font-size:22px; font-weight:800;">처방전 발행</h1>
+        <p style="margin:0; color:var(--text-muted); font-size:13px;">
+          소속 병원의 활성 처방 목록입니다. 각 항목 우측의 <strong>출력</strong> 버튼을 누르면 처방전 화면이 열리고
+          브라우저 인쇄 기능으로 PDF 저장 또는 종이 출력이 가능합니다.
+        </p>
+
+        <div class="rx-table-card">
+          <div th:if="${#lists.isEmpty(prescriptions)}" class="empty">
+            현재 활성 처방이 없습니다.
+          </div>
+          <div th:each="p : ${prescriptions}" class="rx-row">
+            <div class="who">
+              <strong th:text="${p.patient.name}">환자</strong>
+              <small th:text="'#PAT-' + ${#strings.toUpperCase(#strings.substring(p.patient.id.toString(),0,5))}">#PAT-XXXXX</small>
+            </div>
+            <div>
+              <div class="med" th:text="${p.medicationName}">아빌리파이</div>
+              <div class="slot-tags">
+                <th:block th:each="s : ${p.scheduleSlots()}">
+                  <span th:text="${s == 'morning'} ? '아침' : (${s == 'noon'} ? '점심' : '저녁')">아침</span>
+                </th:block>
+                <span style="background:#F1F5F9; color:#64748B;"
+                      th:text="${p.daysSupply} + '일분'">30일분</span>
+              </div>
+            </div>
+            <div class="when">
+              발행 <span th:text="${#temporals.format(p.createdAt, 'yyyy.MM.dd')}">2026.04.29</span><br/>
+              종료 <span th:text="${#temporals.format(p.endDate(), 'yyyy.MM.dd')}">2026.05.29</span>
+            </div>
+            <div class="actions">
+              <a th:href="@{'/reception/patient/' + ${p.patient.id} + '/prescription-print'}"
+                 target="_blank">출력 / PDF</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

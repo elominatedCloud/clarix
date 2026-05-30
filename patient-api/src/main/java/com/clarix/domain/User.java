@@ -1,6 +1,8 @@
 package com.clarix.domain;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 import jakarta.persistence.*;
@@ -14,6 +16,11 @@ import lombok.Setter;
 @Entity
 @Table(name = "users")
 public class User {
+
+    private static final ZoneId CLINIC_ZONE = ZoneId.of("Asia/Seoul");
+
+    private static final DateTimeFormatter APPOINTMENT_DISPLAY =
+        DateTimeFormatter.ofPattern("M월 d일 HH:mm");
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -55,4 +62,9 @@ public class User {
 
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt = OffsetDateTime.now();
+
+    public String bookedAtDisplay() {
+        if (bookedAt == null) return "";
+        return bookedAt.atZoneSameInstant(CLINIC_ZONE).format(APPOINTMENT_DISPLAY);
+    }
 }

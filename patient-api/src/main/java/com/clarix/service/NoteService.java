@@ -13,7 +13,7 @@ import com.clarix.domain.User;
 import com.clarix.repo.ClinicalNoteRepository;
 
 /**
- * 노트 수정 — 작성자 본인만 자기 노트를 수정할 수 있다.
+ * 노트 수정/삭제 — 작성자 본인만 자기 노트를 변경할 수 있다.
  * 의사가 간호 노트를 수정하지 못하고, 그 반대도 마찬가지.
  */
 @Service
@@ -41,5 +41,13 @@ public class NoteService {
         n.setSubjective(s); n.setObjective(o); n.setAssessment(a); n.setPlan(p);
         n.setUpdatedAt(OffsetDateTime.now());
         return notes.save(n);
+    }
+
+    @Transactional
+    public UUID delete(User author, UUID noteId) {
+        ClinicalNote n = requireOwn(author, noteId);
+        UUID patientId = n.getPatient().getId();
+        notes.delete(n);
+        return patientId;
     }
 }

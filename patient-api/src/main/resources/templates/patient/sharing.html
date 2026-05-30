@@ -137,16 +137,6 @@
     </details>
   </div>
 
-  <nav class="clarix-tabbar">
-    <a th:href="@{/patient/}">
-      <span class="dot">🏠</span><span>홈</span>
-    </a>
-    <a th:href="@{/patient/calendar}">
-      <span class="dot">📅</span><span>캘린더</span>
-    </a>
-    <a th:href="@{/patient/me}" aria-current="page">
-      <span class="dot">👤</span><span>마이페이지</span>
-    </a>
-  </nav>
+  <nav th:replace="~{fragments/patient-nav :: tabbar('settings')}"></nav>
 </body>
 </html>

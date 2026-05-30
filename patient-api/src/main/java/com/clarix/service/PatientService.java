@@ -18,6 +18,7 @@ import com.clarix.domain.MealLog;
 import com.clarix.domain.MedStatus;
 import com.clarix.domain.MedicationLog;
 import com.clarix.domain.Prescription;
+import com.clarix.domain.SleepLog;
 import com.clarix.domain.SymptomLog;
 import com.clarix.domain.User;
 import com.clarix.repo.ExerciseLogRepository;
@@ -25,6 +26,7 @@ import com.clarix.repo.HospitalRepository;
 import com.clarix.repo.MealLogRepository;
 import com.clarix.repo.MedicationLogRepository;
 import com.clarix.repo.PrescriptionRepository;
+import com.clarix.repo.SleepLogRepository;
 import com.clarix.repo.SymptomLogRepository;
 import com.clarix.repo.UserRepository;
 
@@ -38,11 +40,13 @@ public class PatientService {
     private final HospitalRepository hospitals;
     private final MealLogRepository mealLogs;
     private final ExerciseLogRepository exerciseLogs;
+    private final SleepLogRepository sleepLogs;
 
     public PatientService(PrescriptionRepository prescriptions, MedicationLogRepository medLogs,
                           SymptomLogRepository symptomLogs, UserRepository users,
                           HospitalRepository hospitals,
-                          MealLogRepository mealLogs, ExerciseLogRepository exerciseLogs) {
+                          MealLogRepository mealLogs, ExerciseLogRepository exerciseLogs,
+                          SleepLogRepository sleepLogs) {
         this.prescriptions = prescriptions;
         this.medLogs = medLogs;
         this.symptomLogs = symptomLogs;
@@ -50,6 +54,7 @@ public class PatientService {
         this.hospitals = hospitals;
         this.mealLogs = mealLogs;
         this.exerciseLogs = exerciseLogs;
+        this.sleepLogs = sleepLogs;
     }
 
     /* ---- meal / exercise ---- */
@@ -82,6 +87,53 @@ public class PatientService {
         OffsetDateTime since = LocalDate.now().minusDays(days - 1L)
             .atStartOfDay(ZoneId.systemDefault()).toOffsetDateTime();
         return exerciseLogs.findByPatientIdAndLoggedAtGreaterThanEqualOrderByLoggedAtDesc(patientId, since);
+    }
+
+    // 운동 종류별 분당 소모 칼로리 추정치 (성인 평균 70kg 기준).
+    // 헬스 앱이 정확한 칼로리를 주지 않을 때 데모 화면에 보여줄 합산값을 만들기 위한 보조 계산.
+    private static int kcalPerMinuteForExercise(String kind) {
+        if (kind == null) return 5;
+        return switch (kind) {
+            case "근력" -> 7;
+            case "자전거" -> 8;
+            case "걷기" -> 4;
+            default -> 5;
+        };
+    }
+
+    /** 오늘 운동 소모 칼로리 합계. 운동 분 × 종류별 kcal/분. */
+    public int exerciseKcalToday(UUID patientId) {
+        return recentExercises(patientId, 1).stream()
+            .mapToInt(e -> e.getDurationMin() * kcalPerMinuteForExercise(e.getKind()))
+            .sum();
+    }
+
+    /** 식사 note에 "시간|메뉴|kcal kcal" 형식으로 저장된 칼로리 값을 합산. */
+    public int mealKcalToday(UUID patientId) {
+        int sum = 0;
+        for (MealLog m : recentMeals(patientId, 1)) {
+            if (m.getNote() == null) continue;
+            String[] parts = m.getNote().split("\\|");
+            if (parts.length < 3) continue;
+            String last = parts[2].replaceAll("[^0-9]", "");
+            if (last.isEmpty()) continue;
+            try { sum += Integer.parseInt(last); } catch (NumberFormatException ignored) {}
+        }
+        return sum;
+    }
+
+    /* ---- sleep ---- */
+    @Transactional
+    public SleepLog logSleep(User patient, double hours, String source) {
+        SleepLog s = new SleepLog();
+        s.setPatient(patient);
+        s.setHours(Math.max(0.0, Math.min(24.0, hours)));
+        s.setSource(source == null || source.isBlank() ? "MANUAL" : source.trim());
+        return sleepLogs.save(s);
+    }
+
+    public Optional<SleepLog> latestSleep(UUID patientId) {
+        return sleepLogs.findFirstByPatientIdOrderByLoggedAtDesc(patientId);
     }
 
     /* ---- prescriptions ---- */

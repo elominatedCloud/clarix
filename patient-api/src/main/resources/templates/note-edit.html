@@ -56,6 +56,14 @@
               <button type="submit" class="btn btn-primary">저장</button>
             </div>
           </form>
+          <form th:action="${backUrl.startsWith('/staff') ? '/staff/note/' + note.id + '/delete'
+                                                          : '/doctor/note/' + note.id + '/delete'}"
+                method="post"
+                onsubmit="return confirm('이 차팅을 삭제할까요? 삭제 후에는 되돌릴 수 없습니다.');"
+                style="display:flex; justify-content:flex-end; margin-top:10px;">
+            <button type="submit" class="btn btn-ghost"
+                    style="border-color:#F04438; color:#B42318;">삭제</button>
+          </form>
         </div>
       </div>
     </main>

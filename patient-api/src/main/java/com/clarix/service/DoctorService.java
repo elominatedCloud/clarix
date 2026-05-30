@@ -368,6 +368,17 @@ public class DoctorService {
                 org.springframework.http.HttpStatus.FORBIDDEN, "no permission");
         }
         User patient = users.findById(patientId).orElseThrow();
+        // 새 처방을 추가하면 처방 사이클을 재시작합니다.
+        // - 기존 활성 처방의 createdAt 을 현재 시각으로 리셋해 누적 복약/순응도 카운터를 0부터 다시 계산.
+        // - 사이클 시작 이전의 medication_logs 도 모두 삭제해 누적치/평균이 새 사이클 데이터로만 산출되도록 합니다.
+        OffsetDateTime now = OffsetDateTime.now();
+        var activeRx = prescriptions.findByPatientIdAndActiveTrueOrderByCreatedAtAsc(patientId);
+        for (Prescription existing : activeRx) {
+            existing.setCreatedAt(now);
+            prescriptions.save(existing);
+        }
+        medLogs.deleteAll(medLogs.findByPatientIdAndTakenAtGreaterThanEqual(patientId,
+            now.minusDays(365)));
         Prescription p = new Prescription();
         p.setPatient(patient);
         p.setMedicationName(name);

@@ -1558,6 +1558,37 @@ body.clarix.calendar-page {
 }
 body.clarix.calendar-page .patient-headline { color: var(--clarix-coral); font-size: 18px; line-height: 1.4; }
 
+.calendar-appointment-summary,
+.cal-day-appointment {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+  padding: 13px 14px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.56);
+  border: 1px solid rgba(255,255,255,0.70);
+  color: var(--clarix-navy);
+  box-shadow: 0 12px 28px rgba(79,93,210,0.10);
+  backdrop-filter: blur(18px);
+}
+
+.calendar-appointment-summary span,
+.calendar-appointment-summary small,
+.cal-day-appointment .label,
+.cal-day-appointment small {
+  color: rgba(4,19,48,0.52);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.calendar-appointment-summary strong,
+.cal-day-appointment strong {
+  color: var(--clarix-navy);
+  font-size: 15px;
+  font-weight: 950;
+  font-variant-numeric: tabular-nums;
+}
+
 .cal-card {
   background: var(--clarix-bg-soft);
   border-radius: 18px;
@@ -1634,6 +1665,15 @@ body.clarix.calendar-page .patient-headline { color: var(--clarix-coral); font-s
   background: var(--clarix-coral);
 }
 .cal-cell.has-mood { z-index: 0; }
+.cal-cell.has-appointment::before {
+  content: '';
+  position: absolute;
+  top: 4px; right: 4px;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #10B981;
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.76);
+}
 .cal-cell.selected {
   background: var(--clarix-navy);
   color: #fff;
@@ -2176,6 +2216,115 @@ body.patient.clarix.medication-page .patient-headline {
   box-shadow: 0 8px 22px rgba(72,85,198,0.08);
 }
 
+.appointment-pill {
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+  border-radius: 16px;
+  background: #fff;
+  color: var(--clarix-navy);
+}
+
+.appointment-pill span,
+.appointment-pill small {
+  color: var(--text-muted);
+}
+
+.appointment-pill strong {
+  font-size: 13px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.care-request-card {
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.68);
+  background: rgba(255,255,255,0.54);
+  box-shadow: 0 12px 28px rgba(79,93,210,0.10);
+  backdrop-filter: blur(18px);
+}
+
+.care-request-card.is-highlight {
+  border-color: rgba(16,185,129,0.35);
+  background: rgba(236,253,245,0.74);
+}
+
+.care-request-compact {
+  width: 100%;
+  margin-top: 16px;
+  text-align: left;
+}
+
+.care-request-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.care-request-head strong {
+  color: var(--clarix-navy);
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.care-request-card p {
+  margin: 8px 0 0;
+  color: rgba(4,19,48,0.56);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.care-request-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.care-request-form.compact {
+  display: block;
+}
+
+.care-request-form textarea {
+  width: 100%;
+  min-height: 78px;
+  padding: 11px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.76);
+  background: rgba(255,255,255,0.66);
+  color: var(--clarix-navy);
+  font: inherit;
+  font-size: 13px;
+  resize: vertical;
+}
+
+.care-request-open {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  color: rgba(4,19,48,0.68);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.request-status-chip {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.request-status-chip[data-tone="warn"] { background: #FFFBEB; color: #B54708; }
+.request-status-chip[data-tone="ok"] { background: #ECFDF5; color: #027A48; }
+.request-status-chip[data-tone="muted"] { background: rgba(4,19,48,0.08); color: rgba(4,19,48,0.52); }
+
 .mobile-metric-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2596,15 +2745,653 @@ body.patient.clarix.medication-page .clarix-tabbar a[aria-current="page"] .dot {
 @media (min-width: 431px) {
   body.patient.clarix.patient-main-page,
   body.patient.clarix.medication-page {
-    background: #4A4A4A;
+    background:
+      linear-gradient(180deg, rgba(236,246,255,0.94) 0%, rgba(180,186,247,0.78) 31%, rgba(250,236,190,0.66) 70%, rgba(239,245,247,0.98) 100%);
+    background-attachment: fixed;
   }
 
   body.patient.clarix.patient-main-page .patient-shell,
   body.patient.clarix.medication-page .patient-shell {
     max-width: 390px;
-    min-height: 844px;
-    margin: 32px auto;
-    background:
-      linear-gradient(180deg, rgba(236,246,255,0.94) 0%, rgba(180,186,247,0.78) 31%, rgba(250,236,190,0.66) 70%, rgba(239,245,247,0.98) 100%);
+    min-height: 100vh;
+    margin: 0 auto;
+    background: transparent;
   }
+}
+
+/* Shared patient surface refresh.
+   Keep every patient-only screen on the same Figma mobile gradient instead of
+   mixing the old coral pages with the newer lavender home/medication pages. */
+body.patient.clarix:not(.mobile-landing):not(.auth-page) {
+  --clarix-patient-gradient:
+    linear-gradient(180deg, rgba(236,246,255,0.94) 0%, rgba(180,186,247,0.78) 31%, rgba(250,236,190,0.66) 70%, rgba(239,245,247,0.98) 100%);
+  --clarix-coral: #4D63F6;
+  --clarix-coral-dim: rgba(4,19,48,0.56);
+  --clarix-bg: transparent;
+  --clarix-bg-soft: rgba(255,255,255,0.54);
+  --clarix-line: rgba(255,255,255,0.68);
+  --clarix-line-soft: rgba(4,19,48,0.08);
+  min-height: 100vh;
+  margin: 0;
+  color: var(--clarix-navy);
+  background: var(--clarix-patient-gradient);
+  background-attachment: fixed;
+}
+
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .patient-shell {
+  width: 100%;
+  max-width: 390px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: max(20px, env(safe-area-inset-top)) 18px 112px;
+  background: transparent;
+  box-shadow: none;
+}
+
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .patient-greeting {
+  color: rgba(4,19,48,0.58);
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .patient-headline,
+body.clarix.calendar-page .patient-headline,
+body.clarix.insights-page .patient-headline {
+  color: var(--clarix-navy);
+  font-size: 23px;
+  line-height: 1.28;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .clarix-back {
+  width: 34px;
+  height: 34px;
+  margin: 2px 0 18px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.58);
+  border: 1px solid rgba(255,255,255,0.76);
+  color: rgba(4,19,48,0.58);
+  box-shadow: 0 8px 22px rgba(72,85,198,0.10);
+}
+
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .tile,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .detail-header,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .step-card,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .qcard,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .info-banner,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .result-card,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .result-message,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .history-card,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .hospital-card,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .tab-row a,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .med-row,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .existing-row,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .me-card,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .me-row,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .doctor-card,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .grant-card,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .cal-card,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .cal-day-mood .body,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .insight-card,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .insight-summary,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .journal-preview-card {
+  background: rgba(255,255,255,0.52);
+  border: 1px solid rgba(255,255,255,0.68);
+  box-shadow: 0 12px 28px rgba(79,93,210,0.10);
+  backdrop-filter: blur(18px);
+}
+
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .emotion-cell {
+  background: rgba(255,255,255,0.38);
+  border-color: rgba(255,255,255,0.58);
+}
+
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .step-pills .step-pill,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .today-progress .bar {
+  background: rgba(4,19,48,0.09);
+}
+
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .step-pills .step-pill[data-active="true"],
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .today-progress .bar > span {
+  background: #4D63F6;
+}
+
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .btn-clarix-primary,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .tab-row a.active,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .slot-toggles input:checked + label,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .opt-row input:checked + label,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .hospital-card button:hover,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .pill-btn.on {
+  background: #4D63F6;
+  border-color: #4D63F6;
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(77,99,246,0.20);
+}
+
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .btn-clarix-ghost,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .hospital-card button,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .pill-btn.off,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .me-row.link::after,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .today-progress .progress-label {
+  color: #4D63F6;
+  border-color: rgba(77,99,246,0.42);
+}
+
+body.patient.clarix:not(.mobile-landing):not(.auth-page) input,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) select,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) textarea,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .slot-toggles label,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .opt-row label {
+  background: rgba(255,255,255,0.62) !important;
+  border-color: rgba(255,255,255,0.76) !important;
+}
+
+body.patient.clarix:not(.mobile-landing):not(.auth-page) input:focus,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) select:focus,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) textarea:focus {
+  border-color: rgba(77,99,246,0.58) !important;
+  box-shadow: 0 0 0 3px rgba(77,99,246,0.13) !important;
+}
+
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .slot-toggles input:checked + label,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .opt-row input:checked + label {
+  background: #4D63F6 !important;
+  border-color: #4D63F6 !important;
+  color: #fff !important;
+}
+
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .opt-row input:checked + label .v,
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .opt-row input:checked + label .l {
+  color: #fff;
+}
+
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .alert-banner.warn {
+  background: rgba(255,255,255,0.58);
+  color: var(--clarix-navy);
+  border-color: rgba(255,255,255,0.72);
+}
+
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .clarix-tabbar {
+  left: 50%;
+  right: auto;
+  bottom: 10px;
+  width: calc(100% - 34px);
+  max-width: 356px;
+  transform: translateX(-50%);
+  justify-content: space-between;
+  padding: 8px 10px max(8px, env(safe-area-inset-bottom));
+  background: rgba(255,255,255,0.86);
+  border: 1px solid rgba(255,255,255,0.78);
+  border-radius: 22px;
+  box-shadow: 0 14px 34px rgba(51,62,180,0.16);
+  backdrop-filter: blur(18px);
+}
+
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .clarix-tabbar a {
+  flex: 1 1 0;
+  min-width: 0;
+  color: rgba(4,19,48,0.46);
+  opacity: 1;
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .clarix-tabbar a .dot {
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  color: inherit;
+  font-size: 15px;
+  box-shadow: none;
+}
+
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .clarix-tabbar a[aria-current="page"] {
+  color: var(--clarix-navy);
+}
+
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .clarix-tabbar a[aria-current="page"] .dot {
+  background: rgba(77,99,246,0.14);
+  color: #344BDF;
+}
+
+body.patient.clarix:not(.mobile-landing):not(.auth-page) .clarix-cta-bar {
+  left: 50%;
+  right: auto;
+  width: 100%;
+  max-width: 390px;
+  transform: translateX(-50%);
+  background: linear-gradient(to top, rgba(239,245,247,0.98) 72%, rgba(239,245,247,0));
+}
+
+body.patient.clarix.calendar-page .cal-empty-state,
+body.patient.clarix.calendar-page .cal-count-summary {
+  color: rgba(4,19,48,0.50);
+}
+
+body.patient.clarix.calendar-page .cal-empty-state {
+  margin-top: 18px;
+  text-align: center;
+  font-size: 13px;
+}
+
+body.patient.clarix.calendar-page .cal-count-summary {
+  margin-top: 14px;
+  text-align: center;
+  font-size: 12px;
+}
+
+body.patient.clarix.calendar-page .cal-insight-title {
+  margin: 0 4px 8px;
+  color: var(--clarix-navy);
+  font-size: 14px;
+  font-weight: 850;
+  letter-spacing: 0;
+}
+
+body.patient.clarix.calendar-page .insight-card .insight-pill {
+  background: rgba(255,255,255,0.72);
+  color: #4D63F6;
+}
+
+body.patient.clarix.calendar-page .insight-card .insight-headline {
+  color: var(--clarix-navy);
+}
+
+body.patient.clarix.calendar-page .insight-card .insight-strip {
+  background: linear-gradient(90deg, rgba(255,196,183,0.54), rgba(191,230,204,0.58));
+}
+
+@media (max-width: 360px) {
+  body.patient.clarix:not(.mobile-landing):not(.auth-page) .patient-shell {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  body.patient.clarix:not(.mobile-landing):not(.auth-page) .patient-headline {
+    font-size: 21px;
+  }
+
+  .mobile-metric-grid,
+  .med-slot-grid,
+  .opt-row,
+  .slot-toggles {
+    gap: 7px;
+  }
+
+  .mobile-metric-card,
+  .mobile-sleep-card,
+  .today-task-panel,
+  .med-dashboard-card,
+  .dose-pill-card,
+  .med-mobile-row,
+  body.patient.clarix:not(.mobile-landing):not(.auth-page) .qcard {
+    border-radius: 14px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .med-dashboard-card {
+    grid-template-columns: 112px 1fr;
+    gap: 10px;
+  }
+
+  .med-progress-ring {
+    width: 102px;
+    height: 102px;
+    padding: 10px;
+  }
+
+  body.patient.clarix:not(.mobile-landing):not(.auth-page) .clarix-tabbar {
+    width: calc(100% - 20px);
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  body.patient.clarix:not(.mobile-landing):not(.auth-page) .clarix-tabbar a {
+    font-size: 9px;
+  }
+
+  body.patient.clarix:not(.mobile-landing):not(.auth-page) .clarix-tabbar a .dot {
+    width: 26px;
+    height: 26px;
+    font-size: 14px;
+  }
+}
+
+/* ==========================================================================
+   4-Tab segmented patient dashboard & dynamic UI elements (Redesign)
+   ========================================================================== */
+
+/* Segmented tab header bar */
+.dashboard-tab-bar {
+  display: flex;
+  background: rgba(4, 19, 48, 0.05);
+  border-radius: 12px;
+  padding: 4px;
+  margin: 16px 0 20px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(8px);
+}
+.dashboard-tab-btn {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: var(--clarix-navy);
+  font-size: 14px;
+  font-weight: 600;
+  height: 38px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 180ms ease, color 180ms ease, transform 100ms ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.dashboard-tab-btn:active {
+  transform: scale(0.97);
+}
+.dashboard-tab-btn.active {
+  background: #FFFFFF;
+  color: var(--clarix-navy);
+  box-shadow: 0 2px 8px rgba(4, 19, 48, 0.08);
+}
+
+/* Tab panes control */
+.dashboard-tab-pane {
+  display: none;
+}
+.dashboard-tab-pane.active {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* Redesigned neumorphic patient cards */
+.dash-card {
+  background: #FFFFFF;
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 0 0 1px rgba(4, 19, 48, 0.03), 0 4px 18px rgba(4, 19, 48, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+}
+.dash-card h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--clarix-navy);
+}
+.dash-card .card-q {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--clarix-navy);
+  margin-top: 4px;
+}
+.dash-card .card-sub {
+  font-size: 12px;
+  color: var(--clarix-coral-dim);
+  margin-top: -4px;
+}
+
+/* 1. Medication Circular Chart & layout */
+.med-circular-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 16px;
+  padding: 10px 0;
+}
+.med-svg-chart {
+  position: relative;
+  width: 120px;
+  height: 120px;
+}
+.med-svg-chart svg {
+  transform: rotate(-90deg);
+  width: 100%;
+  height: 100%;
+}
+.med-chart-bg {
+  fill: none;
+  stroke: rgba(4, 19, 48, 0.05);
+  stroke-width: 10px;
+}
+.med-chart-fill {
+  fill: none;
+  stroke: var(--clarix-coral, #E97F66);
+  stroke-width: 10px;
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.6s ease;
+}
+.med-chart-text-center {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+.med-chart-text-center strong {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--clarix-navy);
+  display: block;
+  line-height: 1.1;
+}
+.med-chart-text-center span {
+  font-size: 10px;
+  color: var(--clarix-coral-dim);
+  font-weight: 600;
+}
+
+/* Dose feed pills */
+.dose-feed-grid {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+.dose-feed-btn {
+  flex: 1;
+  height: 48px;
+  border-radius: 12px;
+  border: 1px solid var(--clarix-line);
+  background: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--clarix-navy);
+  cursor: pointer;
+  transition: all 120ms ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dose-feed-btn:hover {
+  border-color: var(--clarix-coral);
+  color: var(--clarix-coral);
+}
+.dose-feed-btn.active {
+  background: var(--clarix-coral);
+  color: #fff;
+  border-color: var(--clarix-coral);
+  box-shadow: 0 4px 12px rgba(200, 84, 63, 0.2);
+}
+
+/* 2. Mood Sparkline Waves & Bio-Sensors */
+.bio-sensors-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.sensor-card {
+  background: #FFFFFF;
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: 0 0 0 1px rgba(4, 19, 48, 0.03), 0 4px 18px rgba(4, 19, 48, 0.05);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 112px;
+  text-align: left;
+}
+.sensor-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--clarix-coral-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.sensor-value {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--clarix-navy);
+  margin: 4px 0;
+  letter-spacing: -0.01em;
+}
+.sensor-value span {
+  font-size: 12px;
+  color: rgba(4, 19, 48, 0.5);
+  font-weight: 500;
+}
+.sensor-sparkline {
+  height: 32px;
+  margin-top: 4px;
+  width: 100%;
+}
+.sensor-sparkline path {
+  fill: none;
+  stroke-width: 2px;
+  stroke-linecap: round;
+}
+.sensor-sparkline.pulse path {
+  stroke: #FF453A;
+}
+.sensor-sparkline.stress path {
+  stroke: #5E6AD2;
+}
+
+/* 3. Stat layout (Exercise & Meal bottom grids) */
+.metric-stat-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.stat-sub-card {
+  background: rgba(4, 19, 48, 0.03);
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+}
+.stat-sub-card span {
+  font-size: 10px;
+  color: var(--clarix-coral-dim);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.stat-sub-card strong {
+  font-size: 16px;
+  color: var(--clarix-navy);
+  font-weight: 800;
+}
+
+/* Quick exercise tag group */
+.quick-exercise-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.exercise-tag-btn {
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: rgba(4, 19, 48, 0.04);
+  color: var(--clarix-navy);
+  font-size: 12px;
+  font-weight: 600;
+  border: 0;
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+.exercise-tag-btn.active {
+  background: var(--clarix-navy);
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(4, 19, 48, 0.15);
+}
+
+/* Timeline list rows for Meal/Exercise */
+.dash-timeline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.dash-timeline-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: rgba(4, 19, 48, 0.03);
+  border-radius: 12px;
+  font-size: 13px;
+  text-align: left;
+}
+.dash-timeline-item .title-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  color: var(--clarix-navy);
+}
+.dash-timeline-item .sub-desc {
+  font-size: 11px;
+  color: var(--clarix-coral-dim);
+}
+
+/* Password visibility toggle button styling */
+body.patient.clarix.auth-page .field.password-field {
+  position: relative;
+}
+body.patient.clarix.auth-page .field.password-field input {
+  padding-right: 50px;
+}
+.password-toggle-btn {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.62);
+  transition: color 150ms ease, transform 100ms ease;
+  z-index: 5;
+}
+.password-toggle-btn:active {
+  transform: translateY(-50%) scale(0.92);
+}
+.password-toggle-btn:hover {
+  color: #FFFFFF;
+}
+.password-toggle-btn svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.5px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }

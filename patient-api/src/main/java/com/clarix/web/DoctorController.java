@@ -86,8 +86,14 @@ public class DoctorController {
                     || r.id().toString().contains(queryLower))
                 .toList();
 
+        // 위험 인박스는 PHQ-9 점수가 중등도(MODERATE) 이상인 환자만 노출합니다.
+        // 단순 저복약은 환자 목록의 severityTone(warn/danger)으로 충분히 강조되므로
+        // 인박스는 정신과적 중증도 위험에 집중하도록 분리합니다.
         var rows = "inbox".equals(view)
-            ? searchedRows.stream().filter(r -> "danger".equals(r.severityTone())).toList()
+            ? searchedRows.stream()
+                .filter(r -> r.phq9Severity() != null
+                    && r.phq9Severity().ordinal() >= com.clarix.domain.Severity.MODERATE.ordinal())
+                .toList()
             : searchedRows;
 
         model.addAttribute("me", me);
@@ -137,6 +143,13 @@ public class DoctorController {
         }
         model.addAttribute("rxAdherence", rxAdherence);
         model.addAttribute("averages", doctorSvc.patientAverages(id));
+        // 환자가 오늘 환자 화면에서 입력한 값을 의사 화면에도 즉시 노출.
+        model.addAttribute("todayMood", patientSvc.todayMood(id).orElse(null));
+        model.addAttribute("todayMeals", patientSvc.recentMeals(id, 1));
+        model.addAttribute("todayExercises", patientSvc.recentExercises(id, 1));
+        model.addAttribute("todayExerciseKcal", patientSvc.exerciseKcalToday(id));
+        model.addAttribute("todayMealKcal", patientSvc.mealKcalToday(id));
+        model.addAttribute("todaySleep", patientSvc.latestSleep(id).orElse(null));
         model.addAttribute("inactiveRx", doctorSvc.inactivePrescriptionsFor(id));
         model.addAttribute("activeMedNamesPipe",
             rxList.stream()
@@ -155,7 +168,8 @@ public class DoctorController {
         if (errors.hasErrors()) return ValidationFeedback.redirect("/doctor/patient/" + id, errors, redirect);
         doctorSvc.createSoap(me, id, form.getSubjective(), form.getObjective(),
             form.getAssessment(), form.getPlan());
-        return "redirect:/doctor/patient/" + id;
+        // SOAP 저장 후 자동으로 처방전 발행 화면으로 이동 (의사가 인쇄/PDF 저장 가능).
+        return "redirect:/doctor/patient/" + id + "/prescription-print";
     }
 
     @PostMapping("/patient/{id}/prescription")
@@ -227,6 +241,13 @@ public class DoctorController {
         var n = noteSvc.update(me, id, form.getSubjective(), form.getObjective(),
             form.getAssessment(), form.getPlan());
         return "redirect:/doctor/patient/" + n.getPatient().getId();
+    }
+
+    @PostMapping("/note/{id}/delete")
+    public String deleteNote(@PathVariable UUID id, HttpSession session) {
+        User me = current.requireRole(session, Role.DOCTOR);
+        UUID patientId = noteSvc.delete(me, id);
+        return "redirect:/doctor/patient/" + patientId;
     }
 
     /* ---- Admin: staff invite 관리 ---- */

@@ -31,5 +31,15 @@
         }));
       });
     });
+    // 해/달 아이콘 버튼은 클릭 시 현재 테마를 반전합니다.
+    document.querySelectorAll('[data-theme-icon-btn]').forEach((btn) => {
+      btn.addEventListener('click', function () {
+        const next = currentTheme() === 'dark' ? 'light' : 'dark';
+        applyTheme(next);
+        window.dispatchEvent(new CustomEvent('clarix-theme-change', {
+          detail: { theme: next },
+        }));
+      });
+    });
   });
 })();

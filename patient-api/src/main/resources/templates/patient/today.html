@@ -7,9 +7,77 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
   <link rel="stylesheet" th:href="@{/css/tokens.css}" />
   <link rel="stylesheet" th:href="@{/css/patient.css}" />
+  <style>
+    /* 식사/운동 리뉴얼 폼 스타일링 */
+    .meal-yes-no-btn {
+      width: 60px; height: 38px;
+      border: 1.5px solid var(--clarix-line);
+      border-radius: 20px;
+      background: #fff;
+      font-size: 13px; font-weight: 700;
+      cursor: pointer;
+      transition: all 120ms ease;
+    }
+    .meal-yes-no-btn.yes {
+      color: #4D63F6; border-color: #4D63F6;
+    }
+    .meal-yes-no-btn.yes:hover, .meal-yes-no-btn.yes:active {
+      background: rgba(77, 99, 246, 0.06);
+      transform: scale(0.95);
+    }
+    .meal-yes-no-btn.no {
+      color: #E97F66; border-color: #E97F66;
+    }
+    .meal-yes-no-btn.no:hover, .meal-yes-no-btn.no:active {
+      background: rgba(233, 127, 102, 0.06);
+      transform: scale(0.95);
+    }
+
+    .meal-type-card, .exercise-type-card {
+      background: #FFFFFF;
+      border: 1.5px solid var(--clarix-line);
+      border-radius: 18px;
+      padding: 16px 8px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 12px rgba(4,19,48,0.02);
+    }
+    .meal-type-card:hover, .exercise-type-card:hover {
+      border-color: var(--clarix-coral);
+      background: rgba(233,127,102,0.02);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(233,127,102,0.06);
+    }
+    .meal-type-card:active, .exercise-type-card:active {
+      transform: scale(0.96);
+    }
+    .exercise-card-btn-text {
+      font-size: 12px; font-weight: 700;
+      color: var(--clarix-navy); margin-top: 6px;
+      background: #F1F5F9;
+      padding: 2px 10px;
+      border-radius: 12px;
+      border: 1.5px solid var(--clarix-line);
+      transition: all 120ms;
+    }
+    .exercise-type-card:hover .exercise-card-btn-text {
+      background: var(--clarix-coral);
+      color: #fff;
+      border-color: var(--clarix-coral);
+    }
+  </style>
 </head>
 <body class="patient clarix patient-main-page">
   <div class="patient-shell">
+    <!-- 지능형 탭 추천을 위한 당일 미입력 상태 지표 (자바스크립트 판독용) -->
+    <div id="dashboard-status-flags" style="display:none;"
+         th:attr="data-med-pending=${medTaken < medTotal},
+                  data-mood-pending=${mood == null or mood.emotion == null},
+                  data-exercise-pending=${#lists.isEmpty(todayExercises)},
+                  data-meal-pending=${#lists.isEmpty(todayMeals)}"></div>
+
     <header class="mobile-patient-topbar">
       <div class="mobile-avatar" th:text="${#strings.substring(me.name, 0, 1)}">김</div>
       <a th:href="@{/patient/me}" class="mobile-icon-button" aria-label="마이페이지">
@@ -24,6 +92,22 @@
 
     <div class="mobile-note-pill">
       오늘의 기록을 차근차근 채우면 의료진이 흐름을 더 정확히 볼 수 있어요.
+    </div>
+
+    <div th:if="${me.bookedAt != null}" class="mobile-note-pill appointment-pill">
+      <span>다음 진료</span>
+      <strong th:text="${me.bookedAtDisplay()}">5월 30일 14:00</strong>
+      <small th:if="${me.hospital != null}" th:text="${me.hospital.name}">병원명</small>
+    </div>
+
+    <div th:if="${careRequestNotice}" class="mobile-note-pill appointment-pill">
+      <span>진료 요청</span>
+      <strong th:text="${careRequestNotice}">요청 접수</strong>
+    </div>
+
+    <div th:if="${formError}" class="alert-banner warn" style="margin-top:14px; margin-bottom:10px;">
+      <span class="icon">!</span>
+      <div class="body"><strong th:text="${formError}">입력값을 확인하세요</strong></div>
     </div>
 
     <section class="mobile-metric-grid" aria-label="오늘 요약">
@@ -53,362 +137,672 @@
       </article>
     </section>
 
-    <section class="mobile-sleep-card">
-      <div>
-        <span class="metric-label">수면 패턴</span>
-        <strong>4.5<span>h</span></strong>
-        <small>평균 대비 -22%</small>
-      </div>
-      <div class="sleep-bars" aria-hidden="true">
-        <span style="--h:34%;"></span>
-        <span style="--h:48%;"></span>
-        <span style="--h:62%;"></span>
-        <span style="--h:78%;"></span>
-        <span style="--h:46%;"></span>
-        <span style="--h:58%;"></span>
-        <span style="--h:36%;"></span>
-      </div>
-    </section>
-
-    <section class="today-task-panel">
-      <div class="mobile-section-heading">
-        <h2>오늘 해야 할 일</h2>
-        <span th:text="${doneTasks} + '/' + ${totalTasks} + ' 완료'">2/4 완료</span>
-      </div>
-
-    <div th:if="${formError}" class="alert-banner warn" style="margin-top:14px;">
-      <span class="icon">!</span>
-      <div class="body"><strong th:text="${formError}">입력값을 확인하세요</strong></div>
-    </div>
-
-    <!-- 오늘 진행률 -->
-    <div class="today-progress">
-      <div class="bar"><span th:style="'width:' + (${totalTasks > 0 ? doneTasks * 100 / totalTasks : 0}) + '%;'"></span></div>
-      <span class="progress-label" th:text="${doneTasks} + ' / ' + ${totalTasks} + ' 완료'">0 / 4</span>
-    </div>
-
     <!-- 모드 알림 (병원 미연결 / refill day) -->
-    <div th:if="${mode == 'connect'}" class="alert-banner warn" style="margin-top:14px;">
+    <div th:if="${mode == 'connect'}" class="alert-banner warn" style="margin-top:14px; margin-bottom:14px;">
       <span class="icon">🏥</span>
       <div class="body">
         <strong>병원이 연결되지 않았어요</strong>
         <a th:href="@{/patient/welcome}" style="color:inherit; text-decoration:underline;">병원 연결하기 →</a>
       </div>
     </div>
-    <div th:if="${mode == 'hospital_day'}" class="alert-banner danger" style="margin-top:14px;">
+    <div th:if="${mode == 'hospital_day'}" class="alert-banner danger" style="margin-top:14px; margin-bottom:14px;">
       <span class="icon">🏥</span>
       <div class="body">
-        <strong>오늘은 병원 가는 날이에요</strong>
-        <span th:text="${daysToRefill == 0} ? '오늘 약이 마지막이에요'
-                      : ('약이 ' + ${daysToRefill} + '일 남았어요')">—</span>
+        <strong th:text="${daysToRefill == 0} ? '오늘은 병원 가는 날이에요' : '곧 병원 가는 날이에요'">곧 병원 가는 날이에요</strong>
+        <span th:text="${daysToRefill == 0} ? '오늘 약이 마지막이에요' : ('약이 ' + ${daysToRefill} + '일 남았어요')">—</span>
       </div>
     </div>
 
-    <!-- ============== STEP CARD: 한 번에 하나씩 ============== -->
-
-    <!-- STEP 1: 어제 못 챙긴 약 -->
-    <div th:if="${nextStep == 'yesterday_med'}" class="step-card">
-      <div class="step-eyebrow">🌙 어제 못 챙긴 약</div>
-      <h2 class="step-q"
-          th:text="${stepYesterdayMed.medicationName()} + ' (' + (${stepYesterdayMed.slot() == 'morning'} ? '아침' : (${stepYesterdayMed.slot() == 'noon'} ? '점심' : '저녁')) + '약), 어제 드셨나요?'">·</h2>
-      <p class="step-sub">자기 전 약을 잊으셨다면 지금이라도 기록할 수 있어요.</p>
-      <div style="display:flex; gap:8px;">
-        <form th:action="@{/patient/medication/log-yesterday}" method="post" style="flex:2;">
-          <input type="hidden" name="medicationName" th:value="${stepYesterdayMed.medicationName()}" />
-          <input type="hidden" name="slot"           th:value="${stepYesterdayMed.slot()}" />
-          <button type="submit" class="btn-clarix btn-clarix-primary" style="width:100%;">
-            ✓ 어제 복용으로 기록
-          </button>
-        </form>
-        <form th:action="@{/patient/medication/skip-yesterday}" method="post" style="flex:1;">
-          <input type="hidden" name="medicationName" th:value="${stepYesterdayMed.medicationName()}" />
-          <input type="hidden" name="slot"           th:value="${stepYesterdayMed.slot()}" />
-          <button type="submit" class="btn-clarix btn-clarix-ghost" style="width:100%;">건너뜀</button>
-        </form>
+    <!-- 4대 탭 대시보드 패널 영역 -->
+    <section class="today-task-panel" style="margin-top: 20px;">
+      <div class="mobile-section-heading">
+        <h2>오늘 해야 할 일</h2>
+        <span th:text="${doneTasks} + '/' + ${totalTasks} + ' 완료'">2/4 완료</span>
       </div>
-    </div>
 
-    <!-- STEP 2: 지금 시간대 약 (가로 strip — 활성 중앙, 큐가 남은 개수만큼 좌측으로 이어짐) -->
-    <div th:if="${nextStep == 'due_med'}" class="step-card">
-      <div class="step-eyebrow"
-           th:text="(${stepDueSlot == 'morning'} ? '☀️ 아침' : (${stepDueSlot == 'noon'} ? '🌤️ 점심' : '🌙 저녁')) + ' 약 시간이에요'">·</div>
-      <h2 class="step-q" th:text="${stepDueMed.medicationName} + '을 드셨나요?'">·</h2>
-      <p class="step-sub">봉투를 오른쪽으로 밀어 뜯거나 ✓ 버튼을 누르세요.</p>
+      <!-- 오늘 진행률 바 -->
+      <div class="today-progress" style="margin-bottom: 20px;">
+        <div class="bar"><span th:style="'width:' + (${totalTasks > 0 ? doneTasks * 100 / totalTasks : 0}) + '%;'"></span></div>
+        <span class="progress-label" th:text="${doneTasks} + ' / ' + ${totalTasks} + ' 완료'">0 / 4</span>
+      </div>
 
-      <!-- 약 상호작용 경고 -->
-      <div th:if="${!#lists.isEmpty(interactionRisks)}" class="interaction-banner">
-        <span class="ix-icon">⚠</span>
-        <div class="ix-body">
-          <strong>같이 드시는 약 주의</strong>
-          <ul>
-            <li th:each="r : ${interactionRisks}"
-                th:text="${r.drugA()} + ' + ' + ${r.drugB()} + ' — ' + ${r.message()}">·</li>
+      <!-- 4-Tab Segmented Header Bar -->
+      <div class="dashboard-tab-bar" role="tablist">
+        <button type="button" class="dashboard-tab-btn active" data-tab="medication" role="tab" aria-selected="true">복약</button>
+        <button type="button" class="dashboard-tab-btn" data-tab="mood" role="tab" aria-selected="false">기분</button>
+        <button type="button" class="dashboard-tab-btn" data-tab="exercise" role="tab" aria-selected="false">운동</button>
+        <button type="button" class="dashboard-tab-btn" data-tab="meal" role="tab" aria-selected="false">식사</button>
+      </div>
+
+      <!-- TAB 1: 복약 탭 -->
+      <div class="dashboard-tab-pane active" id="pane-medication" role="tabpanel">
+        <!-- 복약 순응도 차트 -->
+        <div class="dash-card">
+          <h2>복약중</h2>
+          <div class="med-circular-wrap">
+            <div class="med-svg-chart">
+              <svg viewBox="0 0 100 100">
+                <circle class="med-chart-bg" cx="50" cy="50" r="42"></circle>
+                <circle class="med-chart-fill" cx="50" cy="50" r="42" 
+                        th:style="'stroke-dasharray: ' + (${adherence7d != null ? adherence7d * 2.6389 : 166.25}) + ' 263.89;'"></circle>
+              </svg>
+              <div class="med-chart-text-center">
+                <strong th:text="${adherence7d != null ? adherence7d + '%' : '63%'}">63%</strong>
+                <span>복약률</span>
+              </div>
+            </div>
+            <div style="flex:1; text-align:left;">
+              <div style="font-size:14px; font-weight:700; color:var(--clarix-navy);" th:text="${#lists.isEmpty(rx)} ? '처방된 약 없음' : ${rx[0].medicationName}">아빌리파이</div>
+              <div style="font-size:11px; color:var(--clarix-coral-dim); font-weight:600;" th:text="${medTaken} + '/' + ${medTotal} + '회 (' + (${medTotal > 0 ? medTaken * 100 / medTotal : 0}) + '%)'">누적 복약 2/2회(100%)</div>
+              <div style="margin-top:6px; display:flex; gap:4px;">
+                <span class="tag" style="background:#FFF0ED; color:#E97F66; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px;">아침</span>
+                <span class="tag" style="background:#EEF2FF; color:#5E6AD2; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px;">저녁</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 오늘 투약 완료 버튼 카드 -->
+        <div class="dash-card">
+          <div class="card-q">Q. 오늘 투약 완료하셨나요?</div>
+          <!-- 복용 처리 폼 -->
+          <th:block th:if="${nextStep == 'due_med'}">
+            <!-- 약 상호작용 경고 -->
+            <div th:if="${!#lists.isEmpty(interactionRisks)}" class="interaction-banner" style="margin-bottom:12px;">
+              <span class="ix-icon">⚠</span>
+              <div class="ix-body">
+                <strong style="font-size:11px;">같이 드시는 약 주의</strong>
+                <ul style="font-size:10px; margin:2px 0 0; padding-left:12px;">
+                  <li th:each="r : ${interactionRisks}" th:text="${r.drugA()} + ' + ' + ${r.drugB()} + ' — ' + ${r.message()}">·</li>
+                </ul>
+              </div>
+            </div>
+            <form th:action="@{/patient/medication/toggle}" method="post" onsubmit="localStorage.setItem('lastSubmittedTab', 'medication'); localStorage.removeItem('activeTab');">
+              <input type="hidden" name="medicationName" th:value="${stepDueMed.medicationName}" />
+              <input type="hidden" name="slot" th:value="${stepDueSlot}" />
+              <input type="hidden" name="status" value="TAKEN" />
+              <button type="submit" class="btn-clarix btn-clarix-primary" style="width:100%;">✓ 복용 완료 (YES)</button>
+            </form>
+          </th:block>
+          <th:block th:unless="${nextStep == 'due_med'}">
+            <button class="btn-clarix btn-clarix-ghost" style="width:100%; pointer-events:none; opacity:0.75;">✓ 오늘 분 복약 완료됨</button>
+          </th:block>
+        </div>
+
+        <!-- 용량 피드백 카드 -->
+        <div class="dash-card" th:if="${nextStep == 'dosage_feedback'}">
+          <div class="card-q">Q. 용량은 어떠셨어요?</div>
+          <p class="card-sub">부족했거나 과했으면 의료진에게 자동으로 전달돼요.</p>
+          <div class="dose-feed-grid" style="display:flex; gap:8px;">
+            <form th:action="@{/patient/medication/feedback}" method="post" style="flex:1;" onsubmit="localStorage.setItem('lastSubmittedTab', 'medication'); localStorage.removeItem('activeTab');">
+              <input type="hidden" name="logId" th:value="${stepFeedbackLog.id}" />
+              <input type="hidden" name="feedback" value="TOO_LOW" />
+              <button type="submit" class="step-pill" style="width:100%; border:1px solid var(--clarix-line); border-radius:12px; height:42px; background:#fff; font-size:12px; font-weight:600; cursor:pointer;">😕 부족</button>
+            </form>
+            <form th:action="@{/patient/medication/feedback}" method="post" style="flex:1;" onsubmit="localStorage.setItem('lastSubmittedTab', 'medication'); localStorage.removeItem('activeTab');">
+              <input type="hidden" name="logId" th:value="${stepFeedbackLog.id}" />
+              <input type="hidden" name="feedback" value="OK" />
+              <button type="submit" class="step-pill ok active" style="width:100%; border:1px solid var(--clarix-coral); border-radius:12px; height:42px; background:rgba(233,127,102,0.1); color:var(--clarix-coral); font-size:12px; font-weight:700; cursor:pointer;">😊 적당</button>
+            </form>
+            <form th:action="@{/patient/medication/feedback}" method="post" style="flex:1;" onsubmit="localStorage.setItem('lastSubmittedTab', 'medication'); localStorage.removeItem('activeTab');">
+              <input type="hidden" name="logId" th:value="${stepFeedbackLog.id}" />
+              <input type="hidden" name="feedback" value="TOO_HIGH" />
+              <button type="submit" class="step-pill" style="width:100%; border:1px solid var(--clarix-line); border-radius:12px; height:42px; background:#fff; font-size:12px; font-weight:600; cursor:pointer;">😣 과함</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- 필요시 복용 리스트 -->
+        <div th:if="${!#lists.isEmpty(prnViews)}" class="dash-card">
+          <h2>필요시 복용 · 4시간 간격 권장</h2>
+          <ul class="prn-list" style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px;">
+            <li th:each="v, it : ${prnViews}" class="prn-row" th:classappend="${v.locked()} ? ' is-prn-locked' : ''"
+                style="display:flex; align-items:center; justify-content:space-between; background:#F8FAFC; border-radius:12px; padding:10px 14px;">
+              <form th:id="'prn-form-' + ${it.index}" th:action="@{/patient/medication/toggle}" method="post" style="display:none;" onsubmit="localStorage.setItem('lastSubmittedTab', 'medication'); localStorage.removeItem('activeTab');">
+                <input type="hidden" name="medicationName" th:value="${v.rx().medicationName}" />
+                <input type="hidden" name="slot" value="asneeded" />
+                <input type="hidden" name="status" value="TAKEN" />
+              </form>
+              <div style="text-align:left;">
+                <div style="font-weight:700; color:var(--clarix-navy); font-size:13px;" th:text="${v.rx().medicationName}">약 이름</div>
+                <div style="font-size:11px; color:var(--clarix-coral-dim); font-weight:600; margin-top:2px;">
+                  <span th:if="${v.todayCount() > 0}" th:text="'오늘 ' + ${v.todayCount()} + '회 복용'">·</span>
+                  <span th:if="${v.lastTaken() != null}" th:text="' · 마지막 ' + ${#temporals.format(v.lastTaken(), 'HH:mm')}">·</span>
+                </div>
+              </div>
+              <button type="submit" th:form="'prn-form-' + ${it.index}" class="btn-clarix btn-clarix-ghost" style="height:32px; padding:0 12px; font-size:12px; border-radius:8px;">✓ 복용</button>
+            </li>
           </ul>
         </div>
       </div>
 
-      <form id="env-due-form" th:action="@{/patient/medication/toggle}" method="post" style="display:none;">
-        <input type="hidden" name="medicationName" th:value="${stepDueMed.medicationName}" />
-        <input type="hidden" name="slot"           th:value="${stepDueSlot}" />
-        <input type="hidden" name="status"         value="TAKEN" />
-      </form>
-
-      <div class="envelope-strip">
-        <th:block th:each="m, it : ${stepDueMeds}">
-          <div class="envelope envelope-large"
-               th:classappend="${it.index == 0} ? ' env-active' : ' env-preview'"
-               th:attr="data-slot=${m.slot()},
-                        data-pos=${it.index},
-                        data-form=${it.index == 0 ? 'env-due-form' : null}"
-               th:style="'--pos:' + ${it.index} + '; z-index:' + (200 - ${it.index}) + ';'">
-            <div class="env-half top"></div>
-            <div class="env-half bottom"></div>
-            <div class="env-hospital"
-                 th:if="${it.index == 0 and me.hospital != null}"
-                 th:text="${me.hospital.name}">·</div>
-            <div class="env-state" th:if="${it.index == 0}">
-              <span class="check">✓</span>
-              <span>복용 완료</span>
+      <!-- TAB 2: 기분 탭 -->
+      <div class="dashboard-tab-pane" id="pane-mood" role="tabpanel">
+        <!-- 감정 픽커 위젯 -->
+        <div class="dash-card">
+          <div class="card-q">지금 감정이 어떠세요?</div>
+          <p class="card-sub" th:text="${me.name} + '님이 지금 느끼는 감정 이모티콘을 골라주세요!'">김환자님이 지금 느끼는 감정 이모티콘을 골라주세요!</p>
+          <form th:action="@{/patient/mood/journal}" method="post" id="moodTabForm" onsubmit="localStorage.setItem('lastSubmittedTab', 'mood'); localStorage.removeItem('activeTab');">
+            <div class="emotion-grid" style="grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 6px 0;">
+              <th:block th:each="e : ${emotions}">
+                <label class="emotion-cell" style="min-height: 90px; border-radius: 16px; padding: 6px;">
+                  <input type="radio" name="emotion" th:value="${e.name()}" />
+                  <span class="emotion-bubble" style="width: 52px; height: 52px; font-size: 32px;" th:attr="data-mood=${e.slug()}" th:text="${e.emoji()}">😀</span>
+                  <span class="emotion-label" style="font-size: 11px; height: 20px; padding: 0 8px;" th:text="${e.label()}">감정</span>
+                </label>
+              </th:block>
             </div>
-            <div th:unless="${it.index == 0}" class="env-caption">
-              <span class="env-name" th:text="${m.med().medicationName}">·</span>
-              <span class="env-time"
-                    th:text="${m.slot() == 'morning'} ? '☀ 아침'
-                             : (${m.slot() == 'noon'} ? '🌤 점심' : '🌙 저녁')">·</span>
+            <button type="submit" id="moodTabSubmit" disabled class="btn-clarix btn-clarix-primary is-disabled" style="width:100%; margin-top:8px;">
+              감정 기록하기
+            </button>
+          </form>
+        </div>
+
+        <!-- 위급 기분 알림 YES/NO 토글 -->
+        <div class="dash-card">
+          <div class="card-q">잠깐! 오늘 위급한 기분을 느끼신적은 없나요?</div>
+          <div style="display:flex; gap:12px; margin-top:4px;">
+            <form th:action="@{/patient/mood/journal}" method="post" style="flex:1;" onsubmit="localStorage.setItem('lastSubmittedTab', 'mood'); localStorage.removeItem('activeTab');">
+              <input type="hidden" name="emotion" value="DOWN" />
+              <input type="hidden" name="journal" value="[위급 신호] 환자가 모바일 화면에서 위급 감정을 선택하여 알림이 자동 접수되었습니다." />
+              <button type="submit" class="btn-clarix btn-clarix-ghost" style="width:100%; border-color:#FF453A; color:#FF453A;">YES</button>
+            </form>
+            <a th:href="@{/patient/calendar}" class="btn-clarix btn-clarix-ghost" style="flex:1; border-color:var(--clarix-navy); color:var(--clarix-navy); display:flex; align-items:center; justify-content:center;">NO</a>
+          </div>
+        </div>
+
+        <!-- 수면 시간 입력 (직접 입력 우선, 향후 Apple 건강/삼성 헬스 연동) -->
+        <div class="dash-card">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <h2 style="margin:0;">수면시간</h2>
+            <span style="font-size:10px; font-weight:700; color:var(--clarix-coral); background:#FFF0ED; padding:3px 8px; border-radius:10px;">직접 입력</span>
+          </div>
+          <div style="display:flex; align-items:baseline; gap:6px; margin-top:8px;">
+            <span style="font-size: 28px; font-weight: 800; color: var(--clarix-navy);"
+                  th:text="${latestSleep != null} ? ${#numbers.formatDecimal(latestSleep.hours, 1, 1)} : '—'">6.0</span>
+            <span style="font-size: 14px; color: var(--clarix-coral-dim); font-weight: 600;">시간</span>
+            <span th:if="${latestSleep != null}" style="font-size: 11px; color: rgba(4,19,48,0.45); margin-left:auto;"
+                  th:text="${#temporals.format(latestSleep.loggedAt, 'M월 d일 HH:mm')} + ' · ' + ${latestSleep.source}">기록</span>
+          </div>
+          <form th:action="@{/patient/sleep}" method="post"
+                style="margin-top: 12px; display:flex; gap:8px; align-items:center;"
+                onsubmit="localStorage.setItem('lastSubmittedTab', 'mood'); localStorage.removeItem('activeTab');">
+            <input type="number" name="hours" min="0" max="24" step="0.1" value="7.0"
+                   style="flex:1; height:38px; border:1px solid var(--clarix-line); border-radius:10px; padding:0 12px; font-size:14px; font-weight:700; color:var(--clarix-navy);"
+                   required />
+            <button type="submit" class="btn-clarix btn-clarix-primary" style="height:38px; padding:0 16px;">기록</button>
+          </form>
+        </div>
+
+        <!-- 헬스 앱 연동 자리. 현재는 데모 데이터(추후 Apple 건강 / 삼성 헬스 SDK 연동 예정) -->
+        <div class="dash-card" style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+          <div style="text-align:left;">
+            <strong style="font-size:13px; color:var(--clarix-navy);">건강 앱 연동</strong>
+            <p style="font-size:11px; color:var(--clarix-coral-dim); font-weight:600; margin:4px 0 0;">Apple 건강 · 삼성 헬스 연결 후 자동 동기화</p>
+          </div>
+          <span style="font-size:10px; font-weight:800; color:#94A3B8; background:#F1F5F9; padding:4px 10px; border-radius:10px;">준비 중</span>
+        </div>
+
+        <div class="bio-sensors-grid">
+          <!-- 심박수 (Apple 건강 / 삼성 헬스 연동 자리, 현재는 데모값) -->
+          <div class="sensor-card">
+            <span class="sensor-title">심박수 <small style="font-size:9px; font-weight:600; color:var(--clarix-coral); margin-left:4px;">헬스 앱</small></span>
+            <div class="sensor-value">98 <span>Bpm</span></div>
+            <svg class="sensor-sparkline pulse" viewBox="0 0 100 30">
+              <path d="M0,15 L15,15 L20,5 L25,25 L30,12 L35,18 L40,15 L60,15 L65,5 L70,25 L75,12 L80,18 L85,15 L100,15" stroke="rgba(255, 69, 58, 0.85)" stroke-width="2" fill="none"></path>
+            </svg>
+          </div>
+          <!-- 스트레스 지수 (Apple 건강 / 삼성 헬스 연동 자리, 현재는 데모값) -->
+          <div class="sensor-card">
+            <span class="sensor-title">스트레스 지수 <small style="font-size:9px; font-weight:600; color:var(--clarix-coral); margin-left:4px;">헬스 앱</small></span>
+            <div class="sensor-value">47 <span>Down</span></div>
+            <svg class="sensor-sparkline stress" viewBox="0 0 100 30">
+              <path d="M0,25 Q15,5 30,22 T60,8 T90,20 T100,15" stroke="rgba(94, 106, 210, 0.85)" stroke-width="2" fill="none"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: 운동 탭 -->
+      <div class="dashboard-tab-pane" id="pane-exercise" role="tabpanel">
+        <!-- 운동기록 입력 위젯 -->
+        <div class="dash-card">
+          <h2>오늘의 운동기록</h2>
+
+          <!-- Step 1: 운동 종류 선택 (3개 카드) -->
+          <div id="exercise-step-1" class="exercise-wizard-step">
+            <div class="card-q" style="margin-bottom: 14px;">오늘은 어떤 운동을 하셨나요?</div>
+            <div class="exercise-type-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 10px;">
+              <button type="button" class="exercise-type-card" onclick="selectExerciseType('근력', '🏋️')">
+                <div class="exercise-emoji-wrap" style="font-size: 42px; line-height: 1; margin-bottom: 8px;">🏋️</div>
+                <span class="exercise-card-btn-text">근력</span>
+              </button>
+              <button type="button" class="exercise-type-card" onclick="selectExerciseType('자전거', '🚴')">
+                <div class="exercise-emoji-wrap" style="font-size: 42px; line-height: 1; margin-bottom: 8px;">🚴</div>
+                <span class="exercise-card-btn-text">자전거</span>
+              </button>
+              <button type="button" class="exercise-type-card" onclick="selectExerciseType('걷기', '🚶')">
+                <div class="exercise-emoji-wrap" style="font-size: 42px; line-height: 1; margin-bottom: 8px;">🚶</div>
+                <span class="exercise-card-btn-text">걷기</span>
+              </button>
             </div>
           </div>
-        </th:block>
-      </div>
 
-      <p class="env-swipe-hint"
-         th:text="'→ 남은 약 ' + ${#lists.size(stepDueMeds)} + '개'">→ 남은 약 N개</p>
+          <!-- Step 2: 누적 시간 입력 폼 -->
+          <div id="exercise-step-2" class="exercise-wizard-step" style="display: none; text-align: center;">
+            <div class="card-q" style="margin-bottom: 14px; text-align: left;">누적 시간을 기록해주세요.</div>
+            
+            <div class="exercise-selected-display" style="background: #F8FAFC; border-radius: 16px; padding: 20px; margin-bottom: 16px;">
+              <div id="exercise-selected-emoji" style="font-size: 64px; line-height: 1; margin-bottom: 8px;">🚴</div>
+              <div id="exercise-selected-name-chip" style="font-size: 13px; font-weight: 700; color: var(--clarix-coral); border: 1.5px solid var(--clarix-coral); padding: 4px 16px; border-radius: 20px; display: inline-block; background: #fff; box-shadow: 0 2px 8px rgba(233,127,102,0.06);">자전거</div>
+            </div>
 
-      <!-- 활성 봉투 탭으로 복용 + 슬롯 스킵 -->
-      <div class="step-actions">
-        <button type="submit" form="env-due-form" class="btn-clarix btn-clarix-primary">
-          ✓ 복용 완료
-        </button>
-        <form th:action="@{/patient/medication/skip-slot}" method="post">
-          <input type="hidden" name="slot" th:value="${stepDueSlot}" />
-          <button type="submit" class="btn-clarix btn-clarix-ghost">다음 단계로 →</button>
-        </form>
-      </div>
+            <form th:action="@{/patient/exercise}" method="post" id="exerciseLogSubmitForm" onsubmit="localStorage.setItem('lastSubmittedTab', 'exercise'); localStorage.removeItem('activeTab');">
+              <!-- Hidden inputs mapped to backend DTO -->
+              <input type="hidden" name="kind" id="exercise-submit-kind" value="자전거" />
+              <input type="hidden" name="note" id="exercise-submit-note" value="" />
 
-      <!-- 필요시 복용 strip — 기본 약 아래, 각 봉투 옆에 ✓ 복용 완료 버튼 -->
-      <div th:if="${!#lists.isEmpty(prnViews)}" class="prn-strip-wrap prn-below">
-        <div class="prn-strip-label">필요시 복용 · 4시간 간격 권장</div>
-        <ul class="prn-list">
-          <li th:each="v, it : ${prnViews}" class="prn-row"
-              th:classappend="${v.locked()} ? ' is-prn-locked' : ''">
-            <form th:id="'prn-form-' + ${it.index}"
-                  th:action="@{/patient/medication/toggle}" method="post" style="display:none;">
-              <input type="hidden" name="medicationName" th:value="${v.rx().medicationName}" />
-              <input type="hidden" name="slot"           value="asneeded" />
-              <input type="hidden" name="status"         value="TAKEN" />
+              <div style="background: #FFF0ED; border-radius: 14px; padding: 14px; margin-bottom: 16px; text-align: left; display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
+                  <span style="font-weight: 700; color: var(--clarix-navy); display: inline-flex; align-items: center; gap: 4px;">
+                    📅 운동 일자
+                  </span>
+                  <span th:text="${#temporals.format(today,'M월 d일')} + ' | ' + ${#temporals.format(today,'E')}" style="font-weight: 700; color: var(--clarix-coral);">5월 27일 | 수</span>
+                </div>
+                <hr style="border: 0; border-top: 1px solid rgba(233,127,102,0.15); margin: 2px 0;" />
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
+                  <span style="font-weight: 700; color: var(--clarix-navy); display: inline-flex; align-items: center; gap: 4px;">
+                    🕒 누적 시간
+                  </span>
+                  <div style="display: flex; align-items: center; gap: 4px;">
+                    <input type="number" name="durationMin" id="exercise-input-duration" min="1" max="600" value="30" style="width: 70px; height: 32px; border-radius: 8px; border: 1px solid var(--clarix-line); padding: 0 8px; font-size: 13px; font-weight: 700; color: var(--clarix-coral); text-align: right;" required />
+                    <span style="font-weight: 700; color: var(--clarix-navy);">분</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn-clarix btn-clarix-ghost" style="flex: 1;" onclick="goToExerciseStep(1)">이전으로</button>
+                <button type="submit" class="btn-clarix btn-clarix-primary" style="flex: 2;">기록하기</button>
+              </div>
             </form>
-            <div class="envelope envelope-prn-small"
-                 th:attr="data-slot='asneeded'"></div>
-            <div class="prn-meta">
-              <div class="prn-name-text" th:text="${v.rx().medicationName}">·</div>
-              <div class="prn-sub">
-                <span th:if="${v.todayCount() > 0}"
-                      th:text="'오늘 ' + ${v.todayCount()} + '회'">·</span>
-                <span th:if="${v.lastTaken() != null}"
-                      th:text="' · 마지막 ' + ${#temporals.format(v.lastTaken(), 'HH:mm')}">·</span>
+          </div>
+        </div>
+
+        <!-- 최근 운동 기록 목록 -->
+        <div class="dash-card">
+          <h2>최근 운동 기록</h2>
+          <div th:if="${#lists.isEmpty(todayExercises)}" style="color: rgba(4,19,48,0.4); font-size: 13px; padding: 12px 4px; text-align: center;">
+            오늘 등록된 운동 기록이 없습니다.
+          </div>
+          <ul th:unless="${#lists.isEmpty(todayExercises)}" class="dash-timeline-list">
+            <th:block th:each="ex : ${todayExercises}">
+              <li class="dash-timeline-item">
+                <div class="title-info">
+                  <!-- kind 에 따른 이모지 매핑 -->
+                  <span th:with="emoji=${ex.kind == '근력' ? '🏋️' : (ex.kind == '자전거' ? '🚴' : '🚶')}"
+                        th:text="${emoji} + ' ' + ${ex.kind}">🚶 걷기</span>
+                  <span class="sub-desc" th:text="${#temporals.format(ex.loggedAt, 'M월 d일 | a h:mm')}">4월 28일 | 오전 7:30</span>
+                </div>
+                <strong th:text="${ex.durationMin} + '분'">32분</strong>
+              </li>
+            </th:block>
+          </ul>
+        </div>
+
+        <!-- 소모 칼로리 (운동 종류별 분당 추정치 합산) -->
+        <div class="dash-card">
+          <h2>소모 칼로리</h2>
+          <div style="font-size: 28px; font-weight: 800; color: var(--clarix-navy);">
+            <span th:text="${#numbers.formatInteger(exerciseKcalToday, 1, 'COMMA')}">0</span>
+            <span style="font-size:14px; color:var(--clarix-coral-dim); font-weight:600;">kcal</span>
+          </div>
+          <p style="font-size:11px; color:var(--clarix-coral-dim); font-weight:600; margin:6px 0 0;">오늘 운동 기록 합산값</p>
+        </div>
+
+        <div class="metric-stat-row">
+          <div class="stat-sub-card">
+            <span>이번 달 운동 누적 일수</span>
+            <strong>8일</strong>
+          </div>
+          <div class="stat-sub-card">
+            <span>평균 운동 시간</span>
+            <strong>9일</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: 식사 탭 -->
+      <div class="dashboard-tab-pane" id="pane-meal" role="tabpanel">
+        <!-- 식사기록 입력 위젯 -->
+        <div class="dash-card">
+          <h2>식사기록</h2>
+          
+          <span id="meal-current-slot" style="display:none;">DINNER</span>
+          <span id="meal-current-slot-label" style="display:none;">저녁</span>
+
+          <!-- Step 1: 식사 하셨나요? YES/NO -->
+          <div id="meal-step-1" class="meal-wizard-step">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+              <div style="text-align: left;">
+                <div style="font-size: 16px; font-weight: 800; color: var(--clarix-navy);" id="meal-step-1-title">✨ 저녁</div>
+                <div style="font-size: 13px; color: var(--clarix-coral-dim); font-weight: 600; margin-top: 2px;">식사 하셨나요?</div>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button type="button" class="meal-yes-no-btn yes" onclick="goToMealStep(2)">YES</button>
+                <form th:action="@{/patient/meal/skip}" method="post" style="display: inline;" onsubmit="localStorage.setItem('lastSubmittedTab', 'meal'); localStorage.removeItem('activeTab');">
+                  <button type="submit" class="meal-yes-no-btn no">NO</button>
+                </form>
               </div>
             </div>
-            <button type="submit" th:form="'prn-form-' + ${it.index}" class="prn-take-btn">
-              ✓ 복용 완료
-            </button>
-          </li>
-        </ul>
-      </div>
-    </div>
-
-    <!-- STEP 3: 용량 피드백 -->
-    <div th:if="${nextStep == 'dosage_feedback'}" class="step-card">
-      <div class="step-eyebrow">💊 방금 드신 약</div>
-      <h2 class="step-q"
-          th:text="${stepFeedbackLog.medicationName} + '의 용량은 어떠셨어요?'">·</h2>
-      <p class="step-sub">부족했거나 과했으면 의료진에게 자동으로 전달돼요.</p>
-      <div style="display:flex; gap:8px;">
-        <form th:action="@{/patient/medication/feedback}" method="post" style="flex:1;">
-          <input type="hidden" name="logId"    th:value="${stepFeedbackLog.id}" />
-          <input type="hidden" name="feedback" value="TOO_LOW" />
-          <button type="submit" class="step-pill">😕 부족</button>
-        </form>
-        <form th:action="@{/patient/medication/feedback}" method="post" style="flex:1;">
-          <input type="hidden" name="logId"    th:value="${stepFeedbackLog.id}" />
-          <input type="hidden" name="feedback" value="OK" />
-          <button type="submit" class="step-pill ok">😊 적당</button>
-        </form>
-        <form th:action="@{/patient/medication/feedback}" method="post" style="flex:1;">
-          <input type="hidden" name="logId"    th:value="${stepFeedbackLog.id}" />
-          <input type="hidden" name="feedback" value="TOO_HIGH" />
-          <button type="submit" class="step-pill">😣 과했음</button>
-        </form>
-      </div>
-      <form th:action="@{/patient/medication/skip-feedback}" method="post" style="margin-top:10px;">
-        <button type="submit" class="btn-clarix btn-clarix-ghost" style="width:100%;">다음 단계로 →</button>
-      </form>
-    </div>
-
-    <!-- STEP 4: 오늘 감정 -->
-    <div th:if="${nextStep == 'mood'}" class="step-card mood-step">
-      <div class="step-eyebrow">😊 오늘의 감정</div>
-      <h2 class="step-q">오늘 기분은 어떠세요?</h2>
-      <p class="step-sub">감정을 고르면 짧은 일기를 남길 수 있어요.</p>
-      <form th:action="@{/patient/mood/journal}" method="post" id="moodPickInline">
-        <div class="emotion-grid emotion-grid-flat">
-          <th:block th:each="e : ${emotions}">
-            <label class="emotion-cell">
-              <input type="radio" name="emotion" th:value="${e.name()}" />
-              <span class="emotion-bubble flat" th:attr="data-mood=${e.slug()}" th:text="${e.emoji()}">😀</span>
-              <span class="emotion-label" th:text="${e.label()}">감정</span>
-            </label>
-          </th:block>
-        </div>
-        <button type="submit" id="moodPickNext" disabled
-                class="btn-clarix btn-clarix-primary is-disabled" style="display:flex; width:100%; margin-top:14px;">
-          다음
-        </button>
-      </form>
-      <form th:action="@{/patient/mood/skip}" method="post" style="margin-top:10px;">
-        <button type="submit" class="btn-clarix btn-clarix-ghost" style="width:100%;">다음 단계로 →</button>
-      </form>
-      <script>
-        (function () {
-          var f = document.getElementById('moodPickInline');
-          var b = document.getElementById('moodPickNext');
-          f.addEventListener('change', function () {
-            var ok = !!f.querySelector('input[name="emotion"]:checked');
-            b.disabled = !ok;
-            b.classList.toggle('is-disabled', !ok);
-          });
-        })();
-      </script>
-    </div>
-
-    <!-- STEP 5: 오늘 식사 -->
-    <div th:if="${nextStep == 'meal'}" class="step-card">
-      <div class="step-eyebrow">🍱 오늘의 식사</div>
-      <h2 class="step-q">오늘 무엇을 드셨어요?</h2>
-      <p class="step-sub">하나만 골라도 다음 단계로 넘어가요.</p>
-      <form th:action="@{/patient/meal}" method="post">
-        <div class="meal-grid">
-          <button type="submit" name="kind" th:each="k : ${mealKinds}" th:value="${k.name()}"
-                  class="meal-chip">
-            <span class="emoji" th:text="${k.emoji()}">🍚</span>
-            <span class="label" th:text="${k.label()}">아침</span>
-          </button>
-        </div>
-      </form>
-      <form th:action="@{/patient/meal/skip}" method="post" style="margin-top:10px;">
-        <button type="submit" class="btn-clarix btn-clarix-ghost" style="display:flex; width:100%;">건너뜀</button>
-      </form>
-    </div>
-
-    <!-- STEP 6: 오늘 운동 -->
-    <div th:if="${nextStep == 'exercise'}" class="step-card">
-      <div class="step-eyebrow">🏃 오늘의 운동</div>
-      <h2 class="step-q">오늘 어떤 운동을 하셨어요?</h2>
-      <p class="step-sub">시간만 입력해도 돼요.</p>
-      <div class="exercise-card" style="background: transparent; padding: 0; box-shadow: none;">
-        <form th:action="@{/patient/exercise}" method="post" id="exerciseFormStep">
-          <div class="quick-row">
-            <button type="button" data-kind="걷기">걷기</button>
-            <button type="button" data-kind="헬스">헬스</button>
-            <button type="button" data-kind="요가">요가</button>
-            <button type="button" data-kind="러닝">러닝</button>
-            <button type="button" data-kind="자전거">자전거</button>
           </div>
-          <div class="form-row">
-            <input type="text" name="kind" id="exerciseKindStep" placeholder="운동 종류" required />
-            <input type="number" name="durationMin" min="1" max="600" placeholder="분" required />
-            <button type="submit">기록</button>
+
+          <!-- Step 2: 어떤 메뉴를 드셨나요? -->
+          <div id="meal-step-2" class="meal-wizard-step" style="display: none;">
+            <div style="text-align: left;">
+              <div style="font-size: 16px; font-weight: 800; color: var(--clarix-navy);" id="meal-step-2-title">✨ 저녁</div>
+              <div style="font-size: 13px; color: var(--clarix-coral-dim); font-weight: 600; margin-top: 2px; margin-bottom: 12px;">어떤 메뉴를 드셨나요?</div>
+            </div>
+            <div class="meal-type-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+              <button type="button" class="meal-type-card" onclick="selectMealType('🍚 밥류', '🍚')">
+                <span class="emoji" style="font-size: 28px;">🍚</span>
+                <span class="label" style="font-size: 12px; font-weight: 700; color: var(--clarix-navy); margin-top: 4px;">밥류</span>
+              </button>
+              <button type="button" class="meal-type-card" onclick="selectMealType('🍕 빵류', '🍕')">
+                <span class="emoji" style="font-size: 28px;">🍕</span>
+                <span class="label" style="font-size: 12px; font-weight: 700; color: var(--clarix-navy); margin-top: 4px;">빵류</span>
+              </button>
+              <button type="button" class="meal-type-card" onclick="selectMealType('🍲 기타', '🍲')">
+                <span class="emoji" style="font-size: 28px;">🍲</span>
+                <span class="label" style="font-size: 12px; font-weight: 700; color: var(--clarix-navy); margin-top: 4px;">기타</span>
+              </button>
+            </div>
+            <button type="button" class="btn-clarix btn-clarix-ghost" style="width: 100%; margin-top: 12px;" onclick="goToMealStep(1)">이전으로</button>
           </div>
-        </form>
-        <form th:action="@{/patient/exercise/skip}" method="post" style="margin-top:10px;">
-          <button type="submit" class="btn-clarix btn-clarix-ghost" style="display:flex; width:100%;">건너뜀</button>
-        </form>
-      </div>
-      <script>
-        (function () {
-          var input = document.getElementById('exerciseKindStep');
-          document.querySelectorAll('#exerciseFormStep .quick-row button').forEach(function (b) {
-            b.addEventListener('click', function () {
-              input.value = b.dataset.kind;
-              document.querySelectorAll('#exerciseFormStep .quick-row button')
-                .forEach(function (x) { x.classList.toggle('active', x === b); });
-              input.focus();
-            });
-          });
-        })();
-      </script>
-    </div>
 
-    <!-- DONE — 칭찬 + D-day + 다음 약 봉투 미리보기 + 카운트다운 -->
-    <div th:if="${nextStep == 'done'}" class="step-card step-done">
-      <div class="step-eyebrow">✨ 오늘 완료</div>
-      <h2 class="step-q">오늘 정말 잘하셨어요</h2>
+          <!-- Step 3: 상세 내용 기록 폼 -->
+          <div id="meal-step-3" class="meal-wizard-step" style="display: none; text-align: center;">
+            <div style="font-size: 16px; font-weight: 800; color: var(--clarix-navy); text-align: left;" id="meal-step-3-title">✨ 저녁</div>
+            <div style="font-size: 13px; color: var(--clarix-coral-dim); font-weight: 600; text-align: left; margin-top: 2px; margin-bottom: 12px;" id="meal-step-3-subtitle">저녁을 잘 챙겨 드셨군요!</div>
+            
+            <div class="meal-selected-display" style="background: #F8FAFC; border-radius: 16px; padding: 16px; margin-bottom: 16px;">
+              <div id="meal-selected-emoji" style="font-size: 52px; line-height: 1;">🍚</div>
+              <div id="meal-selected-type-name" style="font-size: 12px; font-weight: 700; color: var(--clarix-coral); border: 1.5px solid var(--clarix-coral); padding: 3px 14px; border-radius: 20px; display: inline-block; background: #fff; box-shadow: 0 2px 6px rgba(4,19,48,0.03);">밥류</div>
+            </div>
 
-      <!-- D-day 카드 (다음 진료까지) -->
-      <div th:if="${daysToRefill >= 0}" class="done-dday">
-        <span class="num" th:text="'D-' + ${daysToRefill}">D-3</span>
-        <div class="body">
-          <strong>다음 처방까지</strong>
-          <span th:text="${nextRefillDate != null} ? ${#temporals.format(nextRefillDate, 'M월 d일')} + ' 종료' : ''">—</span>
+            <form th:action="@{/patient/meal}" method="post" id="mealLogSubmitForm" onsubmit="localStorage.setItem('lastSubmittedTab', 'meal'); localStorage.removeItem('activeTab');">
+              <!-- Hidden inputs mapped to backend DTO -->
+              <input type="hidden" name="kind" id="meal-submit-kind" value="BREAKFAST" />
+              <input type="hidden" name="note" id="meal-submit-note" value="" />
+
+              <div class="field" style="margin-bottom: 10px; display: flex; align-items: center; gap: 8px; text-align: left;">
+                <label style="font-weight: 700; color: var(--clarix-navy); font-size: 13px; min-width: 60px;">식사 시간</label>
+                <input type="time" id="meal-input-time" style="flex: 1; height: 38px; padding: 0 10px; border: 1px solid var(--clarix-line); border-radius: 8px; font-size: 13px; color: var(--clarix-navy);" required />
+              </div>
+
+              <div class="field" style="margin-bottom: 10px; display: flex; align-items: center; gap: 8px; text-align: left;">
+                <label style="font-weight: 700; color: var(--clarix-navy); font-size: 13px; min-width: 60px;">메뉴 명</label>
+                <input type="text" id="meal-input-menu" placeholder="예: 요거트, 바나나" style="flex: 1; height: 38px; padding: 0 10px; border: 1px solid var(--clarix-line); border-radius: 8px; font-size: 13px; color: var(--clarix-navy);" required />
+              </div>
+
+              <div class="field" style="margin-bottom: 14px; display: flex; align-items: center; gap: 8px; text-align: left;">
+                <label style="font-weight: 700; color: var(--clarix-navy); font-size: 13px; min-width: 60px;">칼로리</label>
+                <input type="number" id="meal-input-calories" placeholder="예: 320" style="flex: 1; height: 38px; padding: 0 10px; border: 1px solid var(--clarix-line); border-radius: 8px; font-size: 13px; color: var(--clarix-navy); text-align: right;" />
+                <span style="font-size: 13px; font-weight: 700; color: var(--clarix-navy);">kcal</span>
+              </div>
+
+              <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn-clarix btn-clarix-ghost" style="flex: 1;" onclick="goToMealStep(2)">이전으로</button>
+                <button type="submit" class="btn-clarix btn-clarix-primary" style="flex: 2;">기록하기</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- 오늘 식사 기록 목록 -->
+        <div class="dash-card">
+          <h2>오늘 식사 기록</h2>
+          <div th:if="${#lists.isEmpty(todayMeals)}" style="color: rgba(4,19,48,0.4); font-size: 13px; padding: 12px 4px; text-align: center;">
+            오늘 등록된 식사 기록이 없습니다.
+          </div>
+          <ul th:unless="${#lists.isEmpty(todayMeals)}" class="dash-timeline-list">
+            <th:block th:each="m : ${todayMeals}">
+              <li class="dash-timeline-item">
+                <div class="title-info">
+                  <!-- kind 에 따른 이모지 및 식사 레이블 -->
+                  <span th:with="emoji=${m.kind.name() == 'BREAKFAST' ? '🍕' : (m.kind.name() == 'LUNCH' ? '🍚' : '🍲')},
+                                 label=${m.kind.name() == 'BREAKFAST' ? '아침' : (m.kind.name() == 'LUNCH' ? '점심' : '저녁')}"
+                        th:text="${emoji} + ' ' + ${label}">🍞 아침</span>
+                  
+                  <span class="sub-desc"
+                        th:text="${m.note != null and #strings.contains(m.note, '|')} ? ${#strings.arraySplit(m.note, '|')[0]} : ${#temporals.format(m.loggedAt, 'a h:mm')}">오전 8:20</span>
+                </div>
+                <strong th:with="hasParts=${m.note != null and #strings.contains(m.note, '|')},
+                                 parts=${hasParts ? #strings.arraySplit(m.note, '|') : null}"
+                        style="text-align: right;">
+                  <span th:text="${hasParts and #arrays.length(parts) > 1} ? ${parts[1]} : ${m.note != null ? m.note : '기록 없음'}">요거트, 바나나</span>
+                  <span th:if="${hasParts and #arrays.length(parts) > 2 and !#strings.isEmpty(parts[2])}"
+                        style="font-size:11px; font-weight:500; color:var(--text-muted); display:block; margin-top:2px;"
+                        th:text="${parts[2]}">320 kcal</span>
+                </strong>
+              </li>
+            </th:block>
+          </ul>
+        </div>
+
+        <!-- 칼로리 & 불규칙 식사일 통계 -->
+        <div class="metric-stat-row">
+          <div class="stat-sub-card">
+            <span>섭취 칼로리</span>
+            <strong th:text="${#numbers.formatInteger(mealKcalToday, 1, 'COMMA')} + ' kcal'">0 kcal</strong>
+          </div>
+          <div class="stat-sub-card" style="border-color:#FCD34D;">
+            <span style="color:#B54708;">불규칙 식사일</span>
+            <strong style="color:#B54708;">12일 <span style="font-size:11px; font-weight:500;">결식포함</span></strong>
+          </div>
         </div>
       </div>
-
-      <!-- 다음 약 카운트다운 -->
-      <div th:if="${nextDueMed != null}" class="done-countdown" id="nextDueCountdown"
-           th:attr="data-due-iso=${nextDueTime}">
-        <span class="icon">⏰</span>
-        <span>다음 약 <strong th:text="${#temporals.format(nextDueTime,'HH:mm')}">13:00</strong></span>
-        <span style="color: var(--clarix-coral-dim);"
-              th:text="'(' + (${nextDueSlot == 'morning'} ? '아침'
-                            : (${nextDueSlot == 'noon'} ? '점심' : '저녁')) + ')'">(점심)</span>
-      </div>
-
-      <p class="step-sub" th:unless="${nextDueMed != null}">
-        오늘 챙길 것 모두 끝났어요. 푹 쉬세요 🌙
-      </p>
-
-      <!-- 다음 약 봉투 미리보기 -->
-      <div th:if="${nextDueMed != null}" class="envelope envelope-large preview-blur"
-           th:attr="data-slot=${nextDueSlot}">
-        <div class="env-half top"></div>
-        <div class="env-half bottom"></div>
-        <div class="env-hospital"
-             th:if="${me.hospital != null}"
-             th:text="${me.hospital.name}">·</div>
-      </div>
-
-      <a th:href="@{/patient/calendar}" class="btn-clarix btn-clarix-ghost"
-         style="display:inline-flex; padding:0 20px; height:42px; margin-top:18px;">캘린더 보기</a>
-    </div>
     </section>
-  </div>
 
-  <!-- 하단 네비게이션 (3 tabs) -->
-  <nav class="clarix-tabbar">
-    <a th:href="@{/patient/}" aria-current="page">
-      <span class="dot">🏠</span><span>홈</span>
-    </a>
-    <a th:href="@{/patient/calendar}">
-      <span class="dot">📅</span><span>캘린더</span>
-    </a>
-    <a th:href="@{/patient/medication}">
-      <span class="dot">💊</span><span>복약</span>
-    </a>
-    <a th:href="@{/patient/me}">
-      <span class="dot">👤</span><span>마이페이지</span>
-    </a>
-  </nav>
+    <!-- 진료 상담 카드 및 캘린더 -->
+    <div class="dash-card" style="margin-top: 18px;">
+      <h2>진료 상담</h2>
+      <div th:if="${openCareRequest != null}" class="care-request-open">
+        <span class="request-status-chip" th:attr="data-tone=${openCareRequest.statusTone()}"
+              th:text="${openCareRequest.statusLabel()}">요청 접수</span>
+        <span th:text="${openCareRequest.reason}" style="font-size: 13px; color: var(--clarix-navy); margin-top: 4px; display: block;">요청 내용</span>
+      </div>
+      <form th:unless="${openCareRequest != null}" th:action="@{/patient/care-request}" method="post" class="care-request-form compact" onsubmit="localStorage.removeItem('activeTab')">
+        <input type="hidden" name="returnTo" value="/patient/" />
+        <input type="hidden" name="reason" value="오늘 정규 약을 모두 복용했고 다음 진료 상담을 요청합니다." />
+        <button type="submit" class="btn-clarix btn-clarix-primary" style="width: 100%;">진료 요청 보내기</button>
+      </form>
+    </div>
+
+  </div> <!-- .patient-shell 닫기 -->
+
+  <nav th:replace="~{fragments/patient-nav :: tabbar('home')}"></nav>
 
   <script th:src="@{/js/envelope.js}"></script>
   <script>
+    // 탭 유지 및 미기록 지능형 다음 탭 전환 제어
+    window.addEventListener('DOMContentLoaded', function () {
+      console.log("Clarix Patient Tab Init starting...");
+      const tabBtns = document.querySelectorAll('.dashboard-tab-btn');
+      const tabPanes = document.querySelectorAll('.dashboard-tab-pane');
+      console.log("Found tab buttons:", tabBtns.length, "Found tab panes:", tabPanes.length);
+      if (tabBtns.length === 0) return;
+
+      const validTabs = ['medication', 'mood', 'exercise', 'meal'];
+
+      function activateTab(tabId) {
+        console.log("Activating tab:", tabId);
+        if (!validTabs.includes(tabId)) {
+          tabId = 'medication';
+        }
+        tabBtns.forEach(b => {
+          const isActive = b.dataset.tab === tabId;
+          b.classList.toggle('active', isActive);
+          b.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        });
+        tabPanes.forEach(pane => {
+          pane.classList.toggle('active', pane.id === 'pane-' + tabId);
+        });
+      }
+
+      // 지능형 미작성 다음 탭 찾기 스케줄러 (순환 탐색 지원)
+      function getNextPendingTab() {
+        const flags = document.getElementById('dashboard-status-flags');
+        if (!flags) return 'medication';
+        
+        const medPending = flags.getAttribute('data-med-pending') === 'true';
+        const moodPending = flags.getAttribute('data-mood-pending') === 'true';
+        const exercisePending = flags.getAttribute('data-exercise-pending') === 'true';
+        const mealPending = flags.getAttribute('data-meal-pending') === 'true';
+        
+        const tabStatus = {
+          medication: medPending,
+          mood: moodPending,
+          exercise: exercisePending,
+          meal: mealPending
+        };
+
+        const tabOrder = ['medication', 'mood', 'exercise', 'meal'];
+        
+        let startIdx = 0;
+        const lastSubmitted = localStorage.getItem('lastSubmittedTab');
+        if (lastSubmitted && tabOrder.includes(lastSubmitted)) {
+          // 방금 제출한 탭의 바로 다음 탭부터 순환식으로 우선 미기록 탭 탐색 시작
+          startIdx = (tabOrder.indexOf(lastSubmitted) + 1) % tabOrder.length;
+          localStorage.removeItem('lastSubmittedTab'); // 1회성 라우팅용
+        }
+
+        // 순환 탐색
+        for (let i = 0; i < tabOrder.length; i++) {
+          const idx = (startIdx + i) % tabOrder.length;
+          const tabId = tabOrder[idx];
+          if (tabStatus[tabId]) {
+            return tabId;
+          }
+        }
+        
+        return 'medication';
+      }
+
+      // 페이지 로드 시 탭 결정 (수동 클릭 탭 복원 or 미기록 자동 탭 이동)
+      let savedTab = localStorage.getItem('activeTab');
+      if (!savedTab || !validTabs.includes(savedTab)) {
+        savedTab = getNextPendingTab();
+      }
+      activateTab(savedTab);
+
+      // 수동 클릭 이벤트 바인딩 (e.preventDefault 적용)
+      tabBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          if (e) e.preventDefault();
+          const tabId = btn.dataset.tab;
+          localStorage.setItem('activeTab', tabId);
+          activateTab(tabId);
+        });
+      });
+    });
+
+    // 식사 위저드 단계 스위칭 제어
+    window.goToMealStep = function (stepNum) {
+      document.querySelectorAll('.meal-wizard-step').forEach(el => el.style.display = 'none');
+      document.getElementById('meal-step-' + stepNum).style.display = 'block';
+    }
+    
+    window.selectMealType = function (typeName, emoji) {
+      document.getElementById('meal-selected-emoji').innerText = emoji;
+      document.getElementById('meal-selected-type-name').innerText = typeName;
+      
+      // 식사 시간대(kind) 자동 계산 및 note 세팅
+      const slot = document.getElementById('meal-current-slot').innerText;
+      const slotLabel = document.getElementById('meal-current-slot-label').innerText;
+      document.getElementById('meal-submit-kind').value = slot;
+      document.getElementById('meal-step-3-subtitle').innerText = slotLabel + '을 잘 챙겨 드셨군요!';
+      
+      // 기본 메뉴명 추천 입력
+      document.getElementById('meal-input-menu').value = typeName.split(' ')[1] || '식사';
+
+      goToMealStep(3);
+    }
+
+    // 식사 폼 서브밋 이벤트리스너 (방어 코드)
+    const mealSubmitForm = document.getElementById('mealLogSubmitForm');
+    if (mealSubmitForm) {
+      mealSubmitForm.addEventListener('submit', function (e) {
+        const timeVal = document.getElementById('meal-input-time').value;
+        const menuVal = document.getElementById('meal-input-menu').value.trim();
+        const kcalVal = document.getElementById('meal-input-calories').value.trim();
+        
+        let timeLabel = timeVal;
+        if (timeVal) {
+          const parts = timeVal.split(':');
+          let hr = parseInt(parts[0], 10);
+          const min = parts[1];
+          const ampm = hr >= 12 ? '오후' : '오전';
+          if (hr > 12) hr -= 12;
+          if (hr === 0) hr = 12;
+          timeLabel = ampm + ' ' + hr + ':' + min;
+        }
+        
+        const noteVal = timeLabel + '|' + menuVal + '|' + (kcalVal ? kcalVal + ' kcal' : '');
+        document.getElementById('meal-submit-note').value = noteVal;
+        
+        // 서브밋 시 탭 강제 복원 기억 삭제해 지능형 라우팅 활성화
+        localStorage.removeItem('activeTab');
+      });
+    }
+
+    // 운동 위저드 단계 스위칭 제어
+    window.goToExerciseStep = function (stepNum) {
+      document.querySelectorAll('.exercise-wizard-step').forEach(el => el.style.display = 'none');
+      document.getElementById('exercise-step-' + stepNum).style.display = 'block';
+    }
+
+    window.selectExerciseType = function (typeName, emoji) {
+      document.getElementById('exercise-selected-emoji').innerText = emoji;
+      document.getElementById('exercise-selected-name-chip').innerText = typeName;
+      document.getElementById('exercise-submit-kind').value = typeName;
+      document.getElementById('exercise-input-duration').value = '30'; // 기본 30분
+      
+      goToExerciseStep(2);
+    }
+
+    // 운동 폼 서브밋 이벤트리스너 (방어 코드)
+    const exerciseSubmitForm = document.getElementById('exerciseLogSubmitForm');
+    if (exerciseSubmitForm) {
+      exerciseSubmitForm.addEventListener('submit', function (e) {
+        // 서브밋 시 탭 강제 복원 기억 삭제해 지능형 라우팅 활성화
+        localStorage.removeItem('activeTab');
+      });
+    }
+
+    // 식사 시간 인풋 기본값 세팅
+    (function() {
+      const timeInput = document.getElementById('meal-input-time');
+      if (timeInput) {
+        const now = new Date();
+        const HH = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        timeInput.value = HH + ':' + mm;
+      }
+    })();
+
+    // 감정 탭 라디오 셀렉트 시 버튼 활성화 제어
+    (function () {
+      const form = document.getElementById('moodTabForm');
+      const submitBtn = document.getElementById('moodTabSubmit');
+      if (!form || !submitBtn) return;
+      form.addEventListener('change', () => {
+        const checked = !!form.querySelector('input[name="emotion"]:checked');
+        submitBtn.disabled = !checked;
+        submitBtn.classList.toggle('is-disabled', !checked);
+      });
+    })();
+
     // ✓ 버튼 누르면 행이 슬라이드 아웃 후 form submit
     document.addEventListener('click', function (e) {
       const btn = e.target.closest('.med-take-btn');

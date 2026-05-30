@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+  <nav class="clarix-tabbar" th:fragment="tabbar(active)">
+    <a th:href="@{/patient/}"
+       th:attr="aria-current=${active == 'home'} ? 'page' : null">
+      <span class="dot">🏠</span><span>홈</span>
+    </a>
+    <a th:href="@{/patient/calendar}"
+       th:attr="aria-current=${active == 'calendar'} ? 'page' : null">
+      <span class="dot">📅</span><span>캘린더</span>
+    </a>
+    <a th:href="@{/patient/me}"
+       th:attr="aria-current=${active == 'settings'} ? 'page' : null">
+      <span class="dot">⚙️</span><span>설정</span>
+    </a>
+  </nav>
+</body>
+</html>

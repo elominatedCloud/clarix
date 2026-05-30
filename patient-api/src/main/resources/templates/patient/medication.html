@@ -2,7 +2,7 @@
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Clarix · 복약</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
   <link rel="stylesheet" th:href="@{/css/tokens.css}" />
@@ -19,6 +19,15 @@
 
     <div class="patient-greeting" th:text="${#temporals.format(today,'M월 d일 EEEE')}">5월 27일 수요일</div>
     <h1 class="patient-headline">복약률을<br/>확인해요.</h1>
+
+    <div th:if="${formError}" class="alert-banner warn" style="margin-top:14px;">
+      <span class="icon">!</span>
+      <div class="body"><strong th:text="${formError}">입력값을 확인하세요</strong></div>
+    </div>
+    <div th:if="${careRequestNotice}" class="alert-banner warn" style="margin-top:14px;">
+      <span class="icon">✓</span>
+      <div class="body"><strong th:text="${careRequestNotice}">요청이 처리됐어요</strong></div>
+    </div>
 
     <section class="med-dashboard-card"
              th:style="'--med-progress:' + (${medTotal > 0 ? medTaken * 100 / medTotal : 0}) + '%;'">
@@ -38,6 +47,37 @@
           1회가 아직 남았어요
         </p>
       </div>
+    </section>
+
+    <section class="care-request-card" th:classappend="${allMedicationDone} ? ' is-highlight' : ''">
+      <div class="care-request-head">
+        <span class="metric-label" th:text="${allMedicationDone} ? '복약 완료 후 진료 요청' : '중간 진료 요청'">중간 진료 요청</span>
+        <strong th:text="${openCareRequest != null} ? '요청 접수됨' : '병원에 전달하기'">병원에 전달하기</strong>
+      </div>
+      <p th:if="${allMedicationDone}">
+        오늘 정규 약을 모두 복용했어요. 처방이 끝나가거나 불편감이 있으면 병원에 진료 요청을 보낼 수 있어요.
+      </p>
+      <p th:unless="${allMedicationDone}">
+        약을 먹는 중간에도 이상 반응, 효과 부족, 빠른 상담 필요가 있으면 요청을 남길 수 있어요.
+      </p>
+
+      <div th:if="${openCareRequest != null}" class="care-request-open">
+        <span class="request-status-chip" th:attr="data-tone=${openCareRequest.statusTone()}"
+              th:text="${openCareRequest.statusLabel()}">요청 접수</span>
+        <span th:text="${openCareRequest.reason}">요청 내용</span>
+        <form th:action="@{'/patient/care-request/' + ${openCareRequest.id} + '/cancel'}" method="post">
+          <input type="hidden" name="returnTo" value="/patient/medication" />
+          <button type="submit" class="btn-clarix btn-clarix-ghost">요청 취소</button>
+        </form>
+      </div>
+
+      <form th:unless="${openCareRequest != null}" th:action="@{/patient/care-request}" method="post" class="care-request-form">
+        <input type="hidden" name="returnTo" value="/patient/medication" />
+        <textarea name="reason" rows="3" maxlength="500"
+                  th:placeholder="${allMedicationDone} ? '예: 약을 모두 복용했고 다음 처방 상담을 받고 싶어요.' : '예: 약 효과가 부족하거나 부작용이 있어 중간 진료를 요청해요.'"
+                  required></textarea>
+        <button type="submit" class="btn-clarix btn-clarix-primary">진료 요청 보내기</button>
+      </form>
     </section>
 
     <section class="dose-pill-card">
@@ -94,19 +134,6 @@
     </div>
   </div>
 
-  <nav class="clarix-tabbar">
-    <a th:href="@{/patient/}">
-      <span class="dot">🏠</span><span>홈</span>
-    </a>
-    <a th:href="@{/patient/calendar}">
-      <span class="dot">📅</span><span>캘린더</span>
-    </a>
-    <a th:href="@{/patient/medication}" aria-current="page">
-      <span class="dot">💊</span><span>복약</span>
-    </a>
-    <a th:href="@{/patient/me}">
-      <span class="dot">👤</span><span>마이페이지</span>
-    </a>
-  </nav>
+  <nav th:replace="~{fragments/patient-nav :: tabbar('medication')}"></nav>
 </body>
 </html>

@@ -49,40 +49,26 @@
           <span>진료 타임라인</span>
         </a>
       </nav>
-      <form th:action="@{/auth/logout}" method="post" class="rail-logout">
-        <button class="rail-link rail-action" type="submit" title="로그아웃" aria-label="로그아웃">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h4v16h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>
-          <span>로그아웃</span>
+      <div class="rail-tools">
+        <form th:action="@{/auth/logout}" method="post" style="display:inline-flex;">
+          <button type="submit" class="header-icon-btn" title="로그아웃" aria-label="로그아웃">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h4v16h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>
+          </button>
+        </form>
+        <button type="button" class="header-icon-btn theme-icon-btn" data-theme-icon-btn
+                title="라이트/다크 전환" aria-label="라이트 다크 전환">
+          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M4.93 19.07l1.41-1.41"/><path d="M17.66 6.34l1.41-1.41"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/></svg>
         </button>
-      </form>
+        <a class="doctor-chip" th:href="@{/doctor/admin}"
+           th:title="${me.name} + ' 의사 · 직원/병원 설정'">
+          <span class="avatar" th:text="${#strings.toUpperCase(#strings.substring(me.name,0,1))}">의</span>
+          <span class="doctor-chip-name" th:text="${me.name} + ' 의사'">김 의사</span>
+        </a>
+      </div>
     </aside>
 
     <main class="doctor-main">
-      <div class="topbar">
-        <nav class="topbar-menu" aria-label="상단 메뉴">
-          <a th:href="@{'/doctor/patient/' + ${patient.id} + '?mode=chart'}"
-             th:attr="aria-current=${mode != 'charting'}">진료 타임라인</a>
-          <a th:href="@{'/doctor/patient/' + ${patient.id} + '?mode=charting'}"
-             th:attr="aria-current=${mode == 'charting'}">차팅</a>
-          <a th:href="@{/doctor/}">환자 목록</a>
-        </nav>
-        <form class="doctor-search" th:action="@{/doctor/}" method="get" role="search">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 21-4.4-4.4"/><circle cx="11" cy="11" r="7"/></svg>
-          <input type="search" name="q" placeholder="Search anything" autocomplete="off" />
-        </form>
-        <div class="topbar-right">
-          <div class="doctor-profile">
-            <span class="profile-name" th:text="${me.name}">의사</span>
-            <span class="profile-role">Chief Psychiatrist</span>
-          </div>
-          <label class="theme-switch" title="라이트/다크 전환">
-            <input type="checkbox" data-theme-toggle aria-label="다크 모드" />
-            <span class="theme-switch-track" aria-hidden="true"><span class="theme-switch-thumb"></span></span>
-            <span class="theme-switch-label" data-theme-label>Light</span>
-          </label>
-          <span class="avatar" th:text="${#strings.toUpperCase(#strings.substring(me.name,0,1))}">의</span>
-        </div>
-      </div>
 
       <div th:if="${formError}" style="padding: 12px 24px 0;">
         <div class="doctor-alert warn">
@@ -190,13 +176,6 @@
           <div class="metadata-grid">
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
               <h3 style="margin:0;">처방 관리</h3>
-              <a th:if="${not #lists.isEmpty(rx)}"
-                 th:href="@{'/doctor/patient/' + ${patient.id} + '/prescription-print'}"
-                 target="_blank"
-                 style="font-size:11px; font-weight:600; color:#5E6AD2; text-decoration:none;
-                        border:1px solid #5E6AD2; padding:3px 8px; border-radius:4px;">
-                처방전
-              </a>
             </div>
             <div th:if="${#lists.isEmpty(rx)}" class="rx-empty">활성 처방 없음</div>
             <ul class="rx-list" th:if="${not #lists.isEmpty(rx)}">
@@ -305,39 +284,288 @@
 
           <th:block th:if="${mode != 'charting'}">
 
-          <!-- 차트 -->
-          <div class="chart-card">
-            <div class="reference-card-title">
-              <div>
-                <h2>진료 타임라인</h2>
-                <p>최근 30일 환자 기록과 처방 흐름</p>
-              </div>
-              <div class="reference-card-actions">
+          <!-- ============ Figma p.14~20: 진료 타임라인 ============ -->
+          <div class="figma-card fig-timeline-card">
+            <div class="fig-timeline-head">
+              <h2 class="fig-timeline-title">진료 타임라인</h2>
+              <div class="fig-mode-actions">
                 <a th:href="@{'/doctor/patient/' + ${patient.id} + '?mode=chart'}"
                    th:attr="aria-current=${mode != 'charting'}">환자 정보</a>
                 <a th:href="@{'/doctor/patient/' + ${patient.id} + '?mode=charting'}"
                    th:attr="aria-current=${mode == 'charting'}">차팅</a>
               </div>
             </div>
-            <div class="tabs" role="tablist">
-              <button class="tab" type="button" data-metric="episode"   aria-selected="true">에피소드</button>
-              <button class="tab" type="button" data-metric="adherence" aria-selected="false">복약</button>
-              <button class="tab" type="button" data-metric="mood"      aria-selected="false">기분</button>
-              <button class="tab" type="button" data-metric="exercise"  aria-selected="false">운동</button>
-              <button class="tab" type="button" data-metric="meal"      aria-selected="false">식사</button>
-              <button class="tab" type="button" data-metric="phq9"      aria-selected="false">PHQ-9</button>
-              <button class="tab" type="button" data-metric="overlay"   aria-selected="false">겹침</button>
+            <div class="fig-tabs" role="tablist">
+              <button class="fig-tab is-active" type="button" data-fig-tab="episode">에피소드</button>
+              <button class="fig-tab" type="button" data-fig-tab="med">복약</button>
+              <button class="fig-tab" type="button" data-fig-tab="mood">기분</button>
+              <button class="fig-tab" type="button" data-fig-tab="exercise">운동</button>
+              <button class="fig-tab" type="button" data-fig-tab="meal">식사</button>
+              <button class="fig-tab" type="button" data-fig-tab="phq9">PHG-9</button>
             </div>
-            <div id="metric-summary" class="metric-summary-grid" aria-live="polite"></div>
-            <div id="adherence-visual" class="adherence-visual" hidden></div>
-            <div class="chart-meta">
-              <span id="chart-title">30일 에피소드</span>
-              <span id="chart-range">—</span>
+
+            <!-- 에피소드 (p.14) -->
+            <div class="fig-pane is-active" data-fig-pane="episode">
+              <div class="fig-pane-chip-row">
+                <button type="button" class="fig-chip is-on">일별개요</button>
+                <button type="button" class="fig-chip">이상행동</button>
+              </div>
+              <div class="fig-episode-row" th:if="${not #lists.isEmpty(timeline)}">
+                <div class="fig-episode-item" th:each="e,it : ${timeline}" th:if="${it.index < 1}">
+                  <span class="fig-episode-date" th:text="${#temporals.format(e.when(),'M/d')} + ' 에피소드 시작 · ' + ${#temporals.format(e.when(),'yyyy.MM.dd')}">·</span>
+                  <span class="fig-episode-meta">자동분류된 PHQ-9</span>
+                </div>
+              </div>
+
+              <h4 class="fig-section-title">이번 달 주요 에피소드</h4>
+              <ul class="fig-timeline-list">
+                <li class="tl-row" th:each="e,it : ${timeline}" th:if="${it.index < 5}"
+                    th:with="tone=${e.kind() == 'phq9' ? 'danger' : (e.kind() == 'mood' ? 'info' : 'muted')}">
+                  <span class="tl-dot" th:attr="data-tone=${tone}"></span>
+                  <div class="tl-body">
+                    <span class="tl-chip" th:attr="data-tone=${tone}"
+                          th:text="${e.kind() == 'phq9' ? '긴급' : (e.kind() == 'mood' ? '알림' : '정보')}">긴급</span>
+                    <strong th:text="${e.text() ?: '기록'}">에피소드</strong>
+                    <small th:text="${e.journal() ?: ''}"></small>
+                  </div>
+                  <span class="tl-time" th:text="${#temporals.format(e.when(),'M/d')} + ' ' + ${#temporals.format(e.when(),'HH:mm')}">4/30 09:42</span>
+                </li>
+              </ul>
             </div>
-            <!-- 처방 lifecycle row (에피소드 탭에서만 보임) -->
-            <div id="episode-rx" class="episode-rx-row" hidden></div>
-            <canvas id="metric-chart" height="220"></canvas>
+
+            <!-- 복약 (p.15/16) -->
+            <div class="fig-pane" data-fig-pane="med">
+              <div class="fig-pane-chip-row">
+                <button type="button" class="fig-chip is-on">일별개요</button>
+              </div>
+              <div class="fig-kpi-grid">
+                <div class="fig-kpi">
+                  <span class="fig-kpi-label">이번 달 복약률</span>
+                  <strong class="fig-kpi-value"
+                          th:text="${header.adherence7d() != null ? header.adherence7d() + '%' : '—'}">19%</strong>
+                  <span class="fig-kpi-sub">↓ 목표치 미달</span>
+                </div>
+                <div class="fig-kpi">
+                  <span class="fig-kpi-label">누적 복약 완료</span>
+                  <strong class="fig-kpi-value"
+                          th:text="${header.adherence7d() != null ? (header.adherence7d() * 30 / 100) : 0} + '회'">14회</strong>
+                  <span class="fig-kpi-sub">7일 순응도 기준</span>
+                </div>
+                <div class="fig-kpi">
+                  <span class="fig-kpi-label">연속 미복약</span>
+                  <strong class="fig-kpi-value">0일</strong>
+                  <span class="fig-kpi-sub">현재 진행중</span>
+                </div>
+              </div>
+              <button type="button" class="fig-chip is-on" style="margin: 14px 18px 12px;">약별보기</button>
+              <div class="fig-med-pill-list">
+                <div class="fig-med-pill-row" th:each="p : ${rx}"
+                     th:with="adh=${rxAdherence[p.id]}">
+                  <div class="fig-med-pill-head">
+                    <strong th:text="${p.medicationName}">아빌리파이</strong>
+                    <span class="fig-med-pill-sub"
+                          th:text="'누적 복약 ' + ${adh != null ? adh.taken() : 0} + ' / ' + ${adh != null ? adh.expected() : 0} + '회'">·</span>
+                  </div>
+                  <div class="fig-med-pill-dots">
+                    <th:block th:each="i : ${#numbers.sequence(1, 24)}">
+                      <span class="pill-dot"
+                            th:classappend="${adh != null and adh.expected() > 0 and i <= (adh.taken() * 24 / adh.expected())} ? ' is-on' : ''"></span>
+                    </th:block>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 기분 (p.17) -->
+            <div class="fig-pane" data-fig-pane="mood">
+              <div class="fig-pane-chip-row">
+                <button type="button" class="fig-chip is-on">히트맵</button>
+              </div>
+              <div class="fig-kpi-grid">
+                <div class="fig-kpi">
+                  <span class="fig-kpi-label">이번 달 평균 기분</span>
+                  <strong class="fig-kpi-value"
+                          th:text="${averages != null and averages.avgMood() != null ? #numbers.formatDecimal(averages.avgMood(),1,1) + ' / 5' : '— / 5'}">2.1 / 5</strong>
+                  <span class="fig-kpi-sub">↓ 목표치 미달</span>
+                </div>
+                <div class="fig-kpi">
+                  <span class="fig-kpi-label">위험 감정 일수</span>
+                  <strong class="fig-kpi-value">9일</strong>
+                  <span class="fig-kpi-sub">/ 30일 중</span>
+                </div>
+                <div class="fig-kpi">
+                  <span class="fig-kpi-label">일기 기록률</span>
+                  <strong class="fig-kpi-value">67%</strong>
+                  <span class="fig-kpi-sub">20일 기록</span>
+                </div>
+              </div>
+              <p class="fig-section-title" style="margin-top:18px;">사용자 감정 인사이트</p>
+            </div>
+
+            <!-- 운동 (p.18) -->
+            <div class="fig-pane" data-fig-pane="exercise">
+              <div class="fig-pane-chip-row">
+                <button type="button" class="fig-chip is-on">히트맵</button>
+              </div>
+              <div class="fig-kpi-grid">
+                <div class="fig-kpi">
+                  <span class="fig-kpi-label">이번 달 운동일</span>
+                  <strong class="fig-kpi-value"
+                          th:text="${#lists.size(exerciseSpark)} + '일'">8일</strong>
+                  <span class="fig-kpi-sub">/ 7일 중</span>
+                </div>
+                <div class="fig-kpi">
+                  <span class="fig-kpi-label">평균 운동 시간</span>
+                  <strong class="fig-kpi-value"
+                          th:text="${(exerciseTotalMin / 7)} + '분'">9분</strong>
+                  <span class="fig-kpi-sub">목표 30분</span>
+                </div>
+                <div class="fig-kpi">
+                  <span class="fig-kpi-label">소모 칼로리</span>
+                  <strong class="fig-kpi-value"
+                          th:text="${todayExerciseKcal != null ? #numbers.formatInteger(todayExerciseKcal,1,'COMMA') : '0'}">1,840</strong>
+                  <span class="fig-kpi-sub">kcal</span>
+                </div>
+              </div>
+              <h4 class="fig-section-title">주간 운동 빈도 <span class="fig-section-sub">단위: 횟수</span></h4>
+              <div class="fig-bar-chart">
+                <div class="fig-bar-col" th:each="d,it : ${exerciseSpark}">
+                  <span class="fig-bar"
+                        th:classappend="${it.index == 2} ? ' is-active' : ''"
+                        th:style="'height:' + (${exerciseMaxMin > 0 ? d.minutes() * 120 / exerciseMaxMin + 20 : 20}) + 'px;'"></span>
+                  <span class="fig-bar-label" th:text="${d.label()}">Mon</span>
+                </div>
+              </div>
+              <h4 class="fig-section-title">최근 운동 기록</h4>
+              <ul class="fig-recent-list">
+                <li th:each="e : ${todayExercises}">
+                  <span class="fig-recent-emoji" th:text="${e.kind == '근력' ? '🏋️' : (e.kind == '자전거' ? '🚴' : '🚶')}">🚶</span>
+                  <div class="fig-recent-body">
+                    <strong th:text="${e.kind}">걷기</strong>
+                    <small th:text="${#temporals.format(e.loggedAt,'M월 d일 | a h:mm')}">4월 28일 | 오전 7:30</small>
+                  </div>
+                  <span class="fig-recent-meta" th:text="${e.durationMin} + '분'">32분</span>
+                </li>
+                <li th:if="${#lists.isEmpty(todayExercises)}" style="color:#94A3B8;">기록 없음</li>
+              </ul>
+            </div>
+
+            <!-- 식사 (p.19) -->
+            <div class="fig-pane" data-fig-pane="meal">
+              <div class="fig-pane-chip-row">
+                <button type="button" class="fig-chip is-on">히트맵</button>
+              </div>
+              <div class="fig-kpi-grid">
+                <div class="fig-kpi">
+                  <span class="fig-kpi-label">오늘 섭취 칼로리</span>
+                  <strong class="fig-kpi-value"
+                          th:text="${todayMealKcal != null ? #numbers.formatInteger(todayMealKcal,1,'COMMA') : '0'}">1,240</strong>
+                  <span class="fig-kpi-sub">kcal / 목표 1,800</span>
+                </div>
+                <div class="fig-kpi">
+                  <span class="fig-kpi-label">식사 기록률</span>
+                  <strong class="fig-kpi-value">53%</strong>
+                  <span class="fig-kpi-sub">이번 달</span>
+                </div>
+                <div class="fig-kpi">
+                  <span class="fig-kpi-label">불규칙 식사일</span>
+                  <strong class="fig-kpi-value">12일</strong>
+                  <span class="fig-kpi-sub">결식 포함</span>
+                </div>
+              </div>
+              <h4 class="fig-section-title"><span th:text="${patient.name}">김영희</span> 환자 식사 기록</h4>
+              <ul class="fig-recent-list">
+                <li th:each="m : ${todayMeals}">
+                  <span class="fig-recent-emoji"
+                        th:text="${m.kind.name() == 'BREAKFAST' ? '🍚' : (m.kind.name() == 'LUNCH' ? '🍔' : '🍲')}">🍚</span>
+                  <div class="fig-recent-body">
+                    <strong th:text="${m.kind.name() == 'BREAKFAST' ? '아침' : (m.kind.name() == 'LUNCH' ? '점심' : '저녁')}
+                                       + ' — ' + ${#temporals.format(m.loggedAt,'a h:mm')}">아침 — 오전 8:20</strong>
+                    <small th:text="${m.note ?: ''}">·</small>
+                  </div>
+                </li>
+                <li th:if="${#lists.isEmpty(todayMeals)}" style="color:#94A3B8;">기록 없음</li>
+              </ul>
+            </div>
+
+            <!-- PHQ-9 (p.20) -->
+            <div class="fig-pane" data-fig-pane="phq9">
+              <div class="fig-pane-chip-row">
+                <button type="button" class="fig-chip is-on">히트맵</button>
+              </div>
+              <div class="fig-kpi-grid">
+                <div class="fig-kpi">
+                  <span class="fig-kpi-label">이번 달 PHQ-9</span>
+                  <strong class="fig-kpi-value"
+                          th:text="${header.phq9Score() != null ? header.phq9Score() : '—'}">21</strong>
+                  <span class="fig-kpi-sub"
+                        th:text="${header.phq9Severity() != null ? header.phq9Severity().label() + ' (15점 이상)' : ''}">중증 (15점 이상)</span>
+                </div>
+                <div class="fig-kpi">
+                  <span class="fig-kpi-label">지난달 대비</span>
+                  <strong class="fig-kpi-value">+4점</strong>
+                  <span class="fig-kpi-sub">악화 추세</span>
+                </div>
+                <div class="fig-kpi">
+                  <span class="fig-kpi-label">검사 횟수</span>
+                  <strong class="fig-kpi-value"
+                          th:text="${phq9History != null ? #lists.size(phq9History) + '회' : '0회'}">3회</strong>
+                  <span class="fig-kpi-sub">이번 달</span>
+                </div>
+              </div>
+              <p class="fig-section-title" style="margin-top:18px;">사용자 감정 인사이트</p>
+              <p class="fig-section-sub" style="margin:0 18px 14px;">PHG-9 점수 추이 — 최근 6개월</p>
+              <svg class="fig-phq-line" viewBox="0 0 800 220" preserveAspectRatio="none" aria-hidden="true">
+                <path d="M0,150 Q120,90 200,120 T400,80 T600,110 T800,90" stroke="#FB923C" stroke-width="3" fill="none" />
+                <circle cx="200" cy="120" r="8" fill="#FB923C" />
+              </svg>
+              <h4 class="fig-section-title">PHG-9 항목별 분석 (최근 검사)</h4>
+              <div class="fig-phq-bars">
+                <div class="fig-phq-row" th:each="lbl,it : ${ {'흥미/즐거움 저하','우울/절망감','수면 장애','피로/무기력','식욕 변화','자기비판','집중력 저하','자해/자살 생각'} }">
+                  <span class="lbl" th:text="${lbl}">흥미/즐거움 저하</span>
+                  <span class="bar"><span style="width:90%;"></span></span>
+                  <span class="meta">거의 매일</span>
+                </div>
+              </div>
+            </div>
           </div>
+
+          <!-- 환자가 오늘 입력한 모바일 화면 데이터 요약. 의사는 차팅 전에 최신 상태를 한눈에 확인. -->
+          <section class="chart-card" style="margin-top:14px;">
+            <div class="reference-card-title">
+              <div>
+                <h2>오늘 환자 입력 요약</h2>
+                <p>환자 모바일 앱에서 실시간 동기화된 값입니다.</p>
+              </div>
+            </div>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 12px;">
+              <div style="background:#F8FAFC; border-radius:12px; padding:12px;">
+                <div style="font-size:11px; color:#64748B; font-weight:700;">오늘 감정</div>
+                <strong style="font-size:18px; color:#0F172A; display:block; margin-top:4px;"
+                        th:text="${todayMood != null and todayMood.emotion != null} ? (${todayMood.emotion.emoji()} + ' ' + ${todayMood.emotion.label()}) : '미기록'">—</strong>
+              </div>
+              <div style="background:#F8FAFC; border-radius:12px; padding:12px;">
+                <div style="font-size:11px; color:#64748B; font-weight:700;">오늘 운동</div>
+                <strong style="font-size:18px; color:#0F172A; display:block; margin-top:4px;"
+                        th:text="${#lists.size(todayExercises)} + '건 · ' + ${todayExerciseKcal} + ' kcal'">0건 · 0 kcal</strong>
+              </div>
+              <div style="background:#F8FAFC; border-radius:12px; padding:12px;">
+                <div style="font-size:11px; color:#64748B; font-weight:700;">오늘 식사</div>
+                <strong style="font-size:18px; color:#0F172A; display:block; margin-top:4px;"
+                        th:text="${#lists.size(todayMeals)} + '건 · ' + ${todayMealKcal} + ' kcal'">0건 · 0 kcal</strong>
+              </div>
+              <div style="background:#F8FAFC; border-radius:12px; padding:12px;">
+                <div style="font-size:11px; color:#64748B; font-weight:700;">최근 수면</div>
+                <strong style="font-size:18px; color:#0F172A; display:block; margin-top:4px;"
+                        th:text="${todaySleep != null} ? (${#numbers.formatDecimal(todaySleep.hours, 1, 1)} + ' 시간 · ' + ${todaySleep.source}) : '미기록'">—</strong>
+              </div>
+            </div>
+            <div th:if="${todayMood != null and todayMood.journal != null and !#strings.isEmpty(todayMood.journal)}"
+                 style="margin-top:12px; padding:10px 12px; background:#FEF3F2; border-left:3px solid #FF453A; font-size:12px; color:#0F172A; border-radius:6px;">
+              <strong style="font-size:11px; color:#B91C1C; display:block; margin-bottom:4px;">환자 메모 / 위급 신호</strong>
+              <span th:text="${todayMood.journal}">메모</span>
+            </div>
+          </section>
 
           <div class="reference-support-grid">
             <section class="reference-metric-panel">
@@ -422,9 +650,17 @@
                 <span th:if="${n.updatedAt != null}" style="color:var(--text-tertiary)"
                       th:text="'(수정 ' + ${#temporals.format(n.updatedAt,'MM-dd HH:mm')} + ')'">·</span>
                 <span th:text="'· ' + ${n.doctor.name} + ' (' + ${n.doctor.role.label()} + ')'">·</span>
-                <a th:if="${n.doctor.id == me.id}"
-                   th:href="@{'/doctor/note/' + ${n.id} + '/edit'}"
-                   style="margin-left:auto; color:#5E6AD2; font-weight:600;">수정</a>
+                <span th:if="${n.doctor.id == me.id}"
+                      style="margin-left:auto; display:flex; align-items:center; gap:8px;">
+                  <a th:href="@{'/doctor/note/' + ${n.id} + '/edit'}"
+                     style="color:#5E6AD2; font-weight:600;">수정</a>
+                  <form th:action="@{'/doctor/note/' + ${n.id} + '/delete'}" method="post"
+                        onsubmit="return confirm('이 차팅을 삭제할까요? 삭제 후에는 되돌릴 수 없습니다.');"
+                        style="display:inline;">
+                    <button type="submit"
+                            style="border:0; background:transparent; color:#B42318; font-weight:600; cursor:pointer; padding:0;">삭제</button>
+                  </form>
+                </span>
               </div>
               <div th:if="${n.subjective != null and !#strings.isEmpty(n.subjective)}"
                    style="font-size:13px; margin-top:6px;"><b>S</b> <span th:text="${n.subjective}">·</span></div>
@@ -474,9 +710,6 @@
           <div class="charting-rx-card">
             <div class="charting-rx-head">
               <h3>처방</h3>
-              <a th:if="${not #lists.isEmpty(rx)}"
-                 th:href="@{'/doctor/patient/' + ${patient.id} + '/prescription-print'}"
-                 target="_blank" class="rx-print-btn">처방전 발행</a>
             </div>
             <ul class="rx-list" th:if="${not #lists.isEmpty(rx)}">
               <li th:each="p : ${rx}" class="rx-item"
@@ -1227,6 +1460,20 @@
         });
       });
       applyFilter();
+    })();
+  </script>
+  <script>
+    // Figma 탭 (에피소드/복약/기분/운동/식사/PHG-9) 전환
+    (function() {
+      const tabs = document.querySelectorAll('.fig-tab[data-fig-tab]');
+      const panes = document.querySelectorAll('.fig-pane[data-fig-pane]');
+      tabs.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const target = btn.dataset.figTab;
+          tabs.forEach(t => t.classList.toggle('is-active', t === btn));
+          panes.forEach(p => p.classList.toggle('is-active', p.dataset.figPane === target));
+        });
+      });
     })();
   </script>
 </body>
