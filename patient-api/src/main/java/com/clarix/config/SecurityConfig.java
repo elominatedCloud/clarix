@@ -69,9 +69,36 @@ public class SecurityConfig {
                 .invalidateHttpSession(true)
                 .deleteCookies("JSESSIONID")
                 .permitAll()
+            )
+            .exceptionHandling(e -> e
+                // 역할이 맞지 않는 화면에 접근하면 Spring 기본 Whitelabel 대신 안내 화면으로 보냅니다.
+                .accessDeniedHandler((request, response, exception) ->
+                    response.sendRedirect(accessDeniedUrl(request))
+                )
             );
 
         return http.build();
+    }
+
+    private String accessDeniedUrl(jakarta.servlet.http.HttpServletRequest request) {
+        String contextPath = request.getContextPath();
+        String path = request.getRequestURI();
+        if (!contextPath.isBlank() && path.startsWith(contextPath)) {
+            path = path.substring(contextPath.length());
+        }
+
+        String targetRole = targetRole(path);
+        String query = targetRole == null ? "" : "?targetRole=" + targetRole;
+        return contextPath + "/auth/access-denied" + query;
+    }
+
+    private String targetRole(String path) {
+        if (path.equals("/patient") || path.startsWith("/patient/")) return "patient";
+        if (path.equals("/doctor") || path.startsWith("/doctor/")) return "doctor";
+        if (path.equals("/reception") || path.startsWith("/reception/")) return "reception";
+        if (path.equals("/staff") || path.startsWith("/staff/")) return "staff";
+        if (path.equals("/admin") || path.startsWith("/admin/")) return "admin";
+        return null;
     }
 
     private SimpleUrlAuthenticationSuccessHandler roleBasedSuccessHandler(UserRepository users) {

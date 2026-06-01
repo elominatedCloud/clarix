@@ -2094,12 +2094,104 @@ body.patient.clarix.auth-page .auth-error {
   border-radius: 8px;
 }
 
+body.patient.clarix.auth-page .auth-notice {
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+  margin: -28px 0 14px;
+  background: rgba(79,88,182,0.34);
+  border: 1px solid rgba(255,255,255,0.34);
+  padding: 10px 12px;
+  border-radius: 8px;
+}
+
 body.patient.clarix.auth-page .auth-note {
   color: rgba(255,255,255,0.7);
   font-size: 11px;
   line-height: 1.5;
   margin: 12px 0 0;
   text-align: center;
+}
+
+body.patient.clarix.auth-page .access-denied-card {
+  justify-content: flex-start;
+}
+
+body.patient.clarix.auth-page .access-eyebrow {
+  display: inline-flex;
+  width: fit-content;
+  margin: 0 0 14px;
+  padding: 7px 11px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.22);
+  color: rgba(255,255,255,0.94);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+body.patient.clarix.auth-page .access-denied-card .subtitle {
+  margin-bottom: 28px;
+}
+
+body.patient.clarix.auth-page .access-session {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 20px;
+}
+
+body.patient.clarix.auth-page .access-session div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 54px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255,255,255,0.38);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.16);
+}
+
+body.patient.clarix.auth-page .access-session span {
+  color: rgba(255,255,255,0.76);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+body.patient.clarix.auth-page .access-session strong {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 900;
+  text-align: right;
+}
+
+body.patient.clarix.auth-page .access-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: auto;
+}
+
+body.patient.clarix.auth-page .access-actions form {
+  display: block;
+  flex: initial;
+  margin: 0;
+}
+
+body.patient.clarix.auth-page .access-actions .btn-clarix {
+  margin-top: 0;
+  min-height: 54px;
+  justify-content: center;
+  text-decoration: none;
+}
+
+body.patient.clarix.auth-page .access-actions .btn-clarix-ghost {
+  height: 54px;
+  border: 1px solid rgba(255,255,255,0.76);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.16);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
 }
 
 @media (min-width: 431px) {

@@ -76,3 +76,4 @@ SPRING_DATASOURCE_URL=jdbc:mysql://<host>:<port>/<database>?useSSL=false&allowPu
 - README also documents a standard MySQL `localhost:3306` setup with password `clarix1234`.
 - Before starting a new server, check for existing Gradle/Java processes.
 - 2026-05-27: Homebrew MySQL failed to start locally because `mysqld` could not load an `abseil` dylib from the installed MySQL 9.3 package. Docker was also not running. Reinstall/relink MySQL dependencies or use Docker MySQL before attempting live Spring screenshots.
+- 2026-06-01: local disk had only about 130-148MiB free. Gradle reached `classes`, but `bootJar` and daemon cache writes failed with `No space left on device`; free disk space before claiming full `./gradlew build` verification.

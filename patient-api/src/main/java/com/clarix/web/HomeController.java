@@ -18,7 +18,9 @@ import com.clarix.domain.User;
 import com.clarix.service.AuthService;
 import com.clarix.service.CurrentUser;
 
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 
@@ -56,11 +58,48 @@ public class HomeController {
     @GetMapping("/auth/login")
     public String loginForm(@RequestParam(required = false) String role,
                              @RequestParam(required = false) Integer error,
+                             @RequestParam(required = false) Integer switched,
                              Model model) {
         String normalizedRole = "doctor".equalsIgnoreCase(role) ? "doctor" : "patient";
         model.addAttribute("role", normalizedRole);
         if (error != null) model.addAttribute("error", "이메일 또는 비밀번호가 일치하지 않습니다");
+        if (switched != null) model.addAttribute("notice", "이전 계정에서 로그아웃했습니다. 사용할 계정으로 다시 로그인하세요.");
         return "auth/login";
+    }
+
+    @GetMapping("/auth/access-denied")
+    public String accessDenied(@RequestParam(required = false) String targetRole,
+                               HttpSession session,
+                               Model model) {
+        User me = current.isLoggedIn(session) ? current.require(session) : null;
+        String currentRole = me == null ? "guest" : roleKey(me.getRole());
+        String target = normalizeTargetRole(targetRole);
+
+        model.addAttribute("currentName", me == null ? "비로그인 사용자" : me.getName());
+        model.addAttribute("currentRole", currentRole);
+        model.addAttribute("currentRoleLabel", roleLabel(currentRole));
+        model.addAttribute("currentHome", me == null ? "/" : roleHome(me.getRole()));
+        model.addAttribute("targetRole", target);
+        model.addAttribute("targetRoleLabel", roleLabel(target));
+        model.addAttribute("targetLoginRole", loginRole(target));
+        return "auth/access-denied";
+    }
+
+    @PostMapping("/auth/switch-role")
+    public String switchRole(@RequestParam(required = false) String targetRole,
+                             HttpServletRequest request,
+                             HttpServletResponse response) {
+        SecurityContextHolder.clearContext();
+        HttpSession session = request.getSession(false);
+        if (session != null) session.invalidate();
+
+        Cookie cookie = new Cookie("JSESSIONID", "");
+        cookie.setPath("/");
+        cookie.setHttpOnly(true);
+        cookie.setMaxAge(0);
+        response.addCookie(cookie);
+
+        return "redirect:/auth/login?role=" + loginRole(normalizeTargetRole(targetRole)) + "&switched=1";
     }
 
     @GetMapping("/auth/signup")
@@ -110,5 +149,49 @@ public class HomeController {
     private String firstError(BindingResult errors) {
         var field = errors.getFieldError();
         return field != null ? field.getDefaultMessage() : "입력값을 확인하세요";
+    }
+
+    private String normalizeTargetRole(String role) {
+        if (role == null) return "doctor";
+        return switch (role.toLowerCase()) {
+            case "patient", "doctor", "reception", "staff", "admin" -> role.toLowerCase();
+            default -> "doctor";
+        };
+    }
+
+    private String loginRole(String role) {
+        // 로그인 화면은 환자/의사 톤만 구분합니다. 직원/관리자는 의사용 톤으로 로그인합니다.
+        return "patient".equals(role) ? "patient" : "doctor";
+    }
+
+    private String roleKey(Role role) {
+        return switch (role) {
+            case PATIENT -> "patient";
+            case DOCTOR -> "doctor";
+            case RECEPTIONIST -> "reception";
+            case NURSE, TECHNICIAN -> "staff";
+            case ADMIN -> "admin";
+        };
+    }
+
+    private String roleLabel(String role) {
+        return switch (role) {
+            case "patient" -> "환자";
+            case "doctor" -> "의사";
+            case "reception" -> "접수";
+            case "staff" -> "의료진";
+            case "admin" -> "관리자";
+            default -> "방문자";
+        };
+    }
+
+    private String roleHome(Role role) {
+        return switch (role) {
+            case PATIENT -> "/patient/";
+            case DOCTOR -> "/doctor/";
+            case RECEPTIONIST -> "/reception/";
+            case NURSE, TECHNICIAN -> "/staff/";
+            case ADMIN -> "/admin/";
+        };
     }
 }

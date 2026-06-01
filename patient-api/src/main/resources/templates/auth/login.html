@@ -17,6 +17,7 @@
       <h1 th:text="${role == 'doctor'} ? 'Welcome to Clarix.' : 'Sign in Clarix.'">Sign in Clarix.</h1>
       <p class="subtitle">서비스의 원활한 사용을 위해<br/>로그인 부탁드려요.</p>
       <p th:if="${error}" th:text="${error}" class="auth-error"></p>
+      <p th:if="${notice}" th:text="${notice}" class="auth-notice"></p>
       <form th:action="@{/auth/login}" method="post" novalidate>
         <input type="hidden" name="role" th:value="${role}" />
         <div class="field">

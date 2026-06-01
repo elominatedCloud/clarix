@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Clarix · 권한 확인</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <link rel="stylesheet" th:href="@{/css/tokens.css}" />
+  <link rel="stylesheet" th:href="@{/css/patient.css}" />
+</head>
+<body class="patient clarix auth-page access-denied-page" th:classappend="${targetLoginRole == 'doctor'} ? ' auth-doctor' : ' auth-patient'">
+  <div class="patient-shell">
+    <main class="auth-card mobile-auth-card access-denied-card" aria-labelledby="access-denied-title">
+      <a class="mobile-back" th:href="${currentHome}" aria-label="현재 계정 홈으로 이동">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+      </a>
+
+      <p class="access-eyebrow">권한 확인</p>
+      <h1 id="access-denied-title">다른 역할로 로그인되어 있어요.</h1>
+      <p class="subtitle">
+        현재 세션은 <strong th:text="${currentRoleLabel}">환자</strong> 권한입니다.<br/>
+        <span th:text="${targetRoleLabel}">의사</span> 화면을 보려면 계정을 전환하세요.
+      </p>
+
+      <section class="access-session" aria-label="세션 정보">
+        <div>
+          <span>현재 계정</span>
+          <strong th:text="|${currentRoleLabel} · ${currentName}|">환자 · 김환자</strong>
+        </div>
+        <div>
+          <span>요청 화면</span>
+          <strong th:text="${targetRoleLabel}">의사</strong>
+        </div>
+      </section>
+
+      <div class="access-actions">
+        <a class="btn-clarix btn-clarix-ghost" th:href="${currentHome}">현재 계정으로 계속</a>
+        <form th:action="@{/auth/switch-role}" method="post">
+          <input type="hidden" name="targetRole" th:value="${targetRole}" />
+          <button type="submit" class="btn-clarix btn-clarix-primary" th:text="|로그아웃 후 ${targetRoleLabel} 로그인|">
+            로그아웃 후 의사 로그인
+          </button>
+        </form>
+      </div>
+
+      <p class="auth-note">
+        같은 시크릿 창들은 하나의 쿠키 세션을 공유합니다. 동시에 다른 역할을 보려면 브라우저 프로필을 분리하세요.
+      </p>
+    </main>
+  </div>
+</body>
+</html>
