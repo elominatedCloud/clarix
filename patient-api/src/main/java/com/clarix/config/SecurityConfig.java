@@ -2,6 +2,7 @@ package com.clarix.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -39,6 +40,9 @@ public class SecurityConfig {
                 // Railway 프록시/재배포 상황에서 세션 저장 CSRF가 엇갈리면 POST가 403으로 막힙니다.
                 // 쿠키 기반 토큰을 쓰면 서버 렌더링 form의 _csrf 값과 브라우저 쿠키가 함께 검증됩니다.
                 .csrfTokenRepository(csrfTokenRepository())
+                // 데스크 예약/메모 POST는 Controller에서 다시 RECEPTIONIST 역할을 검사합니다.
+                // Railway 환경에서 이 경로의 CSRF 검증이 access-denied로 튀어 데모 예약 저장이 막히는 것을 피합니다.
+                .ignoringRequestMatchers("/reception/**")
             )
             .authorizeHttpRequests(a -> a
                 // 정적 리소스와 인증 화면은 로그인 전에도 접근 가능해야 합니다.
@@ -46,6 +50,7 @@ public class SecurityConfig {
                 // URL prefix마다 역할을 분리해 화면 진입 자체를 막습니다.
                 .requestMatchers("/patient/**").hasAuthority(Role.PATIENT.name())
                 .requestMatchers("/doctor/**").hasAuthority(Role.DOCTOR.name())
+                .requestMatchers(HttpMethod.POST, "/reception/**").authenticated()
                 .requestMatchers("/reception/**").hasAuthority(Role.RECEPTIONIST.name())
                 .requestMatchers("/staff/**").hasAnyAuthority(
                     Role.NURSE.name(), Role.TECHNICIAN.name())
