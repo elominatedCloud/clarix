@@ -1,5 +1,6 @@
 package com.clarix.web;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -14,11 +15,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.clarix.domain.Role;
+import com.clarix.domain.SymptomLog;
 import com.clarix.domain.User;
 import com.clarix.service.CurrentUser;
 import com.clarix.service.DoctorService;
 import com.clarix.service.DrugInteractionService;
 import com.clarix.service.GeminiSoapService;
+import com.clarix.service.PatientService;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -30,15 +33,18 @@ public class DoctorApiController {
     private final DoctorService doctorSvc;
     private final DrugInteractionService drugSvc;
     private final GeminiSoapService geminiSvc;
+    private final PatientService patientSvc;
 
     public DoctorApiController(CurrentUser current,
                                DoctorService doctorSvc,
                                DrugInteractionService drugSvc,
-                               GeminiSoapService geminiSvc) {
+                               GeminiSoapService geminiSvc,
+                               PatientService patientSvc) {
         this.current = current;
         this.doctorSvc = doctorSvc;
         this.drugSvc = drugSvc;
         this.geminiSvc = geminiSvc;
+        this.patientSvc = patientSvc;
     }
 
     /** 차트용 JSON — 작은 fetch로 호출. */
@@ -49,6 +55,30 @@ public class DoctorApiController {
         // @RestController는 템플릿 이름이 아니라 객체를 JSON으로 직렬화해 응답합니다.
         User me = current.requireRole(session, Role.DOCTOR);
         return doctorSvc.timeline(me.getId(), id, days);
+    }
+
+    /** 환자 기분 변경 감지용 경량 상태값. 열린 의사 상세 화면이 새 기록을 자동 반영할 때 사용합니다. */
+    @GetMapping("/patient/{id}/mood-state")
+    public Map<String, Object> moodState(@PathVariable UUID id, HttpSession session) {
+        User me = current.requireRole(session, Role.DOCTOR);
+        doctorSvc.requireSharedPatient(me.getId(), id);
+
+        SymptomLog mood = patientSvc.todayMood(id).orElse(null);
+        Map<String, Object> out = new HashMap<>();
+        out.put("signature", moodSignature(mood));
+        if (mood != null && mood.getEmotion() != null) {
+            out.put("date", mood.getLogDate().toString());
+            out.put("emotion", mood.getEmotion().name());
+            out.put("label", mood.getEmotion().label());
+            out.put("journal", mood.getJournal() == null ? "" : mood.getJournal());
+        }
+        return out;
+    }
+
+    private static String moodSignature(SymptomLog mood) {
+        if (mood == null || mood.getEmotion() == null) return "none";
+        String journal = mood.getJournal() == null ? "" : mood.getJournal();
+        return mood.getLogDate() + "|" + mood.getEmotion().name() + "|" + journal;
     }
 
     /** 약물 상호작용 사전 체크 — 처방 추가 직전 폼이 호출. */

@@ -19,6 +19,7 @@ import com.clarix.dto.SoapNoteForm;
 import com.clarix.dto.HospitalPickForm;
 import com.clarix.dto.StaffInviteForm;
 import com.clarix.domain.Role;
+import com.clarix.domain.SymptomLog;
 import com.clarix.domain.User;
 import com.clarix.service.CurrentUser;
 import com.clarix.service.DoctorService;
@@ -144,8 +145,10 @@ public class DoctorController {
         }
         model.addAttribute("rxAdherence", rxAdherence);
         model.addAttribute("averages", doctorSvc.patientAverages(id));
-        // 환자가 오늘 환자 화면에서 입력한 값을 의사 화면에도 즉시 노출.
-        model.addAttribute("todayMood", patientSvc.todayMood(id).orElse(null));
+        // 환자가 오늘 환자 화면에서 입력한 값을 의사 화면에도 노출.
+        var todayMood = patientSvc.todayMood(id).orElse(null);
+        model.addAttribute("todayMood", todayMood);
+        model.addAttribute("todayMoodSignature", moodSignature(todayMood));
         model.addAttribute("todayMeals", patientSvc.recentMeals(id, 1));
         model.addAttribute("todayExercises", patientSvc.recentExercises(id, 1));
         model.addAttribute("todayExerciseKcal", patientSvc.exerciseKcalToday(id));
@@ -157,6 +160,12 @@ public class DoctorController {
                 .map(com.clarix.domain.Prescription::getMedicationName)
                 .collect(java.util.stream.Collectors.joining("|")));
         return "doctor/patient";
+    }
+
+    private static String moodSignature(SymptomLog mood) {
+        if (mood == null || mood.getEmotion() == null) return "none";
+        String journal = mood.getJournal() == null ? "" : mood.getJournal();
+        return mood.getLogDate() + "|" + mood.getEmotion().name() + "|" + journal;
     }
 
     @PostMapping("/patient/{id}/soap")

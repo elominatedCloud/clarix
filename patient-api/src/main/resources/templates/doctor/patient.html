@@ -817,6 +817,7 @@
   <script th:inline="javascript">
     /*<![CDATA[*/
     const PATIENT_ID = /*[[${patient.id}]]*/ '';
+    const INITIAL_MOOD_SIGNATURE = /*[[${todayMoodSignature}]]*/ 'none';
     /*]]>*/
   </script>
   <script>
@@ -903,6 +904,48 @@
           txt.hidden = false; spin.hidden = true;
         }
       });
+    })();
+
+    // Keep an already-open doctor detail page in sync with newly submitted patient mood.
+    (function () {
+      let lastMoodSignature = INITIAL_MOOD_SIGNATURE || 'none';
+      let formDirty = false;
+      const formFields = document.querySelectorAll('form input, form textarea, form select');
+
+      formFields.forEach(el => {
+        el.addEventListener('input', () => { formDirty = true; }, { once: true });
+      });
+
+      const restoreY = sessionStorage.getItem('doctorPatientScrollY');
+      if (restoreY !== null) {
+        sessionStorage.removeItem('doctorPatientScrollY');
+        requestAnimationFrame(() => window.scrollTo(0, Number(restoreY) || 0));
+      }
+
+      function hasActiveFormInput() {
+        const active = document.activeElement;
+        return !!(active && active.closest && active.closest('form'));
+      }
+
+      async function pollMoodState() {
+        if (document.hidden || formDirty || hasActiveFormInput()) return;
+        try {
+          const r = await fetch(`/doctor/patient/${PATIENT_ID}/mood-state`, {
+            headers: { Accept: 'application/json' },
+            cache: 'no-store',
+          });
+          if (!r.ok) return;
+          const data = await r.json();
+          if (data.signature && data.signature !== lastMoodSignature) {
+            sessionStorage.setItem('doctorPatientScrollY', String(window.scrollY));
+            window.location.reload();
+          }
+        } catch (err) {
+          console.debug('[mood-state]', err);
+        }
+      }
+
+      window.setInterval(pollMoodState, 12000);
     })();
 
     let chart;

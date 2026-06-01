@@ -38,6 +38,8 @@ import com.clarix.repo.UserRepository;
 @Service
 public class DoctorService {
 
+    private static final ZoneId CLINIC_ZONE = ZoneId.of("Asia/Seoul");
+
     private final PermissionRepository permissions;
     private final PrescriptionRepository prescriptions;
     private final MedicationLogRepository medLogs;
@@ -119,14 +121,13 @@ public class DoctorService {
     public List<TodayBooked> todayBookedFor(UUID doctorId) {
         List<Permission> perms = permissions.findByDoctorIdAndActiveTrue(doctorId);
         if (perms.isEmpty()) return List.of();
-        ZoneId zone = ZoneId.of("Asia/Seoul");
-        LocalDate today = LocalDate.now();
+        LocalDate today = clinicToday();
         List<TodayBooked> out = new ArrayList<>();
         for (Permission perm : perms) {
             User patient = perm.getPatient();
             OffsetDateTime booked = patient.getBookedAt();
             if (booked == null) continue;
-            LocalDate bookedDate = booked.atZoneSameInstant(zone).toLocalDate();
+            LocalDate bookedDate = booked.atZoneSameInstant(CLINIC_ZONE).toLocalDate();
             if (!bookedDate.equals(today)) continue;
             out.add(new TodayBooked(patient.getId(), patient.getName(), booked));
         }
@@ -172,7 +173,7 @@ public class DoctorService {
         }
 
         List<SymptomLog> moods = symptomLogs.findByPatientIdInAndLogDateGreaterThanEqual(
-            patientIds, LocalDate.now().minusDays(days - 1L));
+            patientIds, clinicToday().minusDays(days - 1L));
         Map<UUID, List<Integer>> moodAcc = new HashMap<>();
         Map<UUID, SymptomLog> lastMoodByPatient = new HashMap<>();
         for (SymptomLog s : moods) {
@@ -243,7 +244,7 @@ public class DoctorService {
         perm.setLastViewedAt(OffsetDateTime.now());
         permissions.save(perm);
 
-        LocalDate sinceDate = LocalDate.now().minusDays(days - 1L);
+        LocalDate sinceDate = clinicToday().minusDays(days - 1L);
         List<String> labels = new ArrayList<>();
         Map<String, Integer> takenByDay   = new LinkedHashMap<>();
         Map<String, Integer> missedByDay  = new LinkedHashMap<>();
@@ -518,7 +519,7 @@ public class DoctorService {
     public PatientAverages patientAverages(UUID patientId) {
         // 가장 최근에 시작된 활성 처방의 시작일을 사이클 시작으로
         var rxList = prescriptions.findByPatientIdAndActiveTrueOrderByCreatedAtAsc(patientId);
-        LocalDate today = LocalDate.now();
+        LocalDate today = clinicToday();
         LocalDate sinceDate;
         int days;
         boolean hasRx = !rxList.isEmpty();
@@ -609,7 +610,7 @@ public class DoctorService {
         var rxList = prescriptions.findByPatientIdAndActiveTrueOrderByCreatedAtAsc(patientId);
         int totalSlots = rxList.stream().mapToInt(p -> p.scheduleSlots().size()).sum();
 
-        LocalDate sinceDate = LocalDate.now().minusDays(6);
+        LocalDate sinceDate = clinicToday().minusDays(6);
         OffsetDateTime since = sinceDate.atStartOfDay(ZoneId.systemDefault()).toOffsetDateTime();
 
         var medLogs7 = medLogs.findByPatientIdAndTakenAtGreaterThanEqual(patientId, since);
@@ -665,7 +666,7 @@ public class DoctorService {
         if (latestMood == null) {
             alerts.add(new Alert("muted", "최근 7일 감정 기록 없음"));
         } else {
-            long gap = java.time.temporal.ChronoUnit.DAYS.between(latestMood.getLogDate(), LocalDate.now());
+            long gap = java.time.temporal.ChronoUnit.DAYS.between(latestMood.getLogDate(), clinicToday());
             if (gap >= 3) alerts.add(new Alert("muted", gap + "일 연속 감정 미기록"));
         }
         if (lastMedLog == null && totalSlots > 0) {
@@ -718,7 +719,7 @@ public class DoctorService {
                                  Emotion emotion, String journal) {}
 
     public List<TimelineEvent> timelineEvents(UUID patientId, int limit) {
-        java.time.LocalDate sinceDate = java.time.LocalDate.now().minusDays(13L);
+        java.time.LocalDate sinceDate = clinicToday().minusDays(13L);
         OffsetDateTime since = sinceDate.atStartOfDay(java.time.ZoneId.systemDefault()).toOffsetDateTime();
 
         List<TimelineEvent> out = new ArrayList<>();
@@ -772,5 +773,9 @@ public class DoctorService {
 
         out.sort((a, b) -> b.when().compareTo(a.when()));
         return out.size() > limit ? out.subList(0, limit) : out;
+    }
+
+    private static LocalDate clinicToday() {
+        return LocalDate.now(CLINIC_ZONE);
     }
 }

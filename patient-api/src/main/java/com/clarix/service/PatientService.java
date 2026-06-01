@@ -33,6 +33,8 @@ import com.clarix.repo.UserRepository;
 @Service
 public class PatientService {
 
+    private static final ZoneId CLINIC_ZONE = ZoneId.of("Asia/Seoul");
+
     private final PrescriptionRepository prescriptions;
     private final MedicationLogRepository medLogs;
     private final SymptomLogRepository symptomLogs;
@@ -196,7 +198,7 @@ public class PatientService {
         OffsetDateTime start = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toOffsetDateTime();
         OffsetDateTime end = start.plusDays(1);
         medLogs.deleteAll(medLogs.findByPatientIdAndTakenAtBetween(patientId, start, end));
-        symptomLogs.findByPatientIdAndLogDate(patientId, LocalDate.now()).ifPresent(symptomLogs::delete);
+        symptomLogs.findByPatientIdAndLogDate(patientId, clinicToday()).ifPresent(symptomLogs::delete);
         mealLogs.deleteAll(mealLogs.findByPatientIdAndLoggedAtGreaterThanEqualOrderByLoggedAtDesc(patientId, start));
         exerciseLogs.deleteAll(exerciseLogs.findByPatientIdAndLoggedAtGreaterThanEqualOrderByLoggedAtDesc(patientId, start));
     }
@@ -338,12 +340,12 @@ public class PatientService {
 
     /* ---- symptom logs ---- */
     public Optional<SymptomLog> todayMood(UUID patientId) {
-        return symptomLogs.findByPatientIdAndLogDate(patientId, LocalDate.now());
+        return symptomLogs.findByPatientIdAndLogDate(patientId, clinicToday());
     }
 
     @Transactional
     public SymptomLog upsertMood(User patient, Integer moodScore, String symptomsJson, String note) {
-        LocalDate today = LocalDate.now();
+        LocalDate today = clinicToday();
         SymptomLog row = symptomLogs.findByPatientIdAndLogDate(patient.getId(), today)
             .orElseGet(() -> {
                 SymptomLog x = new SymptomLog();
@@ -359,7 +361,7 @@ public class PatientService {
 
     @Transactional
     public SymptomLog upsertEmotion(User patient, Emotion emotion, String journal) {
-        LocalDate today = LocalDate.now();
+        LocalDate today = clinicToday();
         // 감정 기록은 하루 1행으로 유지합니다. 이미 있으면 update, 없으면 insert.
         SymptomLog row = symptomLogs.findByPatientIdAndLogDate(patient.getId(), today)
             .orElseGet(() -> {
@@ -377,7 +379,7 @@ public class PatientService {
 
     public List<SymptomLog> recentMoods(UUID patientId, int days) {
         return symptomLogs.findByPatientIdAndLogDateGreaterThanEqualOrderByLogDateAsc(
-            patientId, LocalDate.now().minusDays(days - 1L));
+            patientId, clinicToday().minusDays(days - 1L));
     }
 
     public List<SymptomLog> moodsBetween(UUID patientId, LocalDate from, LocalDate to) {
@@ -405,5 +407,9 @@ public class PatientService {
         Hospital h = hospitals.findById(hospitalId).orElseThrow();
         patient.setHospital(h);
         users.save(patient);
+    }
+
+    private static LocalDate clinicToday() {
+        return LocalDate.now(CLINIC_ZONE);
     }
 }
