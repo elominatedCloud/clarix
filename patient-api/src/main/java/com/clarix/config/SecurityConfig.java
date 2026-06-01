@@ -7,6 +7,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 import com.clarix.domain.Role;
 import com.clarix.domain.User;
@@ -34,6 +35,11 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http,
                                            UserRepository users) throws Exception {
         http
+            .csrf(csrf -> csrf
+                // Railway 프록시/재배포 상황에서 세션 저장 CSRF가 엇갈리면 POST가 403으로 막힙니다.
+                // 쿠키 기반 토큰을 쓰면 서버 렌더링 form의 _csrf 값과 브라우저 쿠키가 함께 검증됩니다.
+                .csrfTokenRepository(csrfTokenRepository())
+            )
             .authorizeHttpRequests(a -> a
                 // 정적 리소스와 인증 화면은 로그인 전에도 접근 가능해야 합니다.
                 .requestMatchers("/", "/health", "/auth/**", "/css/**", "/js/**", "/img/**").permitAll()
@@ -78,6 +84,12 @@ public class SecurityConfig {
             );
 
         return http.build();
+    }
+
+    private CookieCsrfTokenRepository csrfTokenRepository() {
+        CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+        repository.setCookiePath("/");
+        return repository;
     }
 
     private String accessDeniedUrl(jakarta.servlet.http.HttpServletRequest request) {
