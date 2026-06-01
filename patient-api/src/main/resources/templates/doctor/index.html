@@ -131,7 +131,6 @@
                       <div class="pt-info-cell">
                         <span class="pt-info-avatar"></span>
                         <strong class="pt-info-name" th:text="${r.name}">김영희</strong>
-                        <span class="pt-info-age" th:text="${20 + (it.index * 3) % 25} + '세'">20세</span>
                       </div>
                     </td>
                     <td class="pt-date-cell"
@@ -208,7 +207,6 @@
                   <div class="today-patient-card-meta">
                     <strong th:text="${r.name}">김영희</strong>
                     <small>
-                      Age: <span th:text="${20 + (it.index * 7) % 30}">34</span>
                       <span class="pat-id" th:text="'#PAT-' + ${#strings.substring(r.id.toString(),0,5).toUpperCase()}">#PAT-99210</span>
                     </small>
                   </div>

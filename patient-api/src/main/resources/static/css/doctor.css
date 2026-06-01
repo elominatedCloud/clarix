@@ -3119,10 +3119,6 @@ body.doctor .pt-info-name {
   font-weight: 700;
   color: #0F172A;
 }
-body.doctor .pt-info-age {
-  font-size: 12px;
-  color: #64748B;
-}
 body.doctor .pt-date-cell {
   font-size: 13px;
   color: #0F172A;
@@ -3972,4 +3968,3 @@ body.doctor .doctor-chip-name {
 @media (max-width: 520px) {
   body.doctor .doctor-chip-name { display: none; }
 }
-
